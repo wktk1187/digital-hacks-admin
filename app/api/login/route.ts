@@ -36,4 +36,6 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, email: (data as any).email, name: '管理者' });
-} 
+}
+
+export const runtime = 'nodejs'; 
