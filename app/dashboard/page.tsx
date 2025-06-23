@@ -27,8 +27,16 @@ import { supabase } from "@/lib/supabase";
 export default function DashboardPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTab, setSelectedTab] = useState<TabType>("month");
-  const [meetingData, setMeetingData] = useState<MeetingData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [meetingData, setMeetingData] = useState<MeetingData | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('dashboardMeetingData');
+        if (stored) return JSON.parse(stored) as MeetingData;
+      } catch (_) {}
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(meetingData === null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -138,6 +146,9 @@ export default function DashboardPage() {
         };
 
         setMeetingData(data);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('dashboardMeetingData', JSON.stringify(data));
+        }
       } catch (e) {
         console.error(e);
         // フォールバック: サンプルデータ
@@ -288,7 +299,7 @@ export default function DashboardPage() {
 
   /* ---------- レンダリング ---------- */
   if (!user) return <LoginForm onLogin={handleLogin} />;
-  if (loading || !meetingData) return <div className="p-6">Loading...</div>;
+  if (!meetingData) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gray-100">
