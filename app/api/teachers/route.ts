@@ -5,7 +5,9 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export async function GET() {
   const { data, error } = await supabaseAdmin.from('teachers').select('*').order('name');
   if (error) return NextResponse.json({ error }, { status: 400 });
-  return NextResponse.json(data);
+  // フロント側は { id, name } 形式を期待しているため変換
+  const resp = data?.map((t: any) => ({ id: t.email, name: t.name })) ?? [];
+  return NextResponse.json(resp);
 }
 
 // POST /api/teachers : 追加 { id/email, name }
