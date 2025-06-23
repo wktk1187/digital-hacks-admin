@@ -20,6 +20,7 @@ import {
   deleteTeacherApi,
   getAllStats,
   getTeacherStats,
+  getTeachers,
 } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
@@ -39,7 +40,7 @@ export default function DashboardPage() {
   });
 
   const generateSampleData = (): MeetingData => {
-    const teachers = getInitialTeachers();
+    const teachers = getInitialTeachers() as { id: string; name: string }[];
     return {
       totalDaily: 0,
       totalMonthly: 0,
@@ -68,11 +69,11 @@ export default function DashboardPage() {
         // ① 全体統計を取得
         const all = await getAllStats();
 
-        // ② 講師リスト
-        const teachers = getInitialTeachers();
+        // ② 講師リスト Supabase から取得
+        const teachers = (await getTeachers()) as { id: string; name: string }[];
 
         // ③ 講師別統計を並列取得
-        const teacherStatsPromises = teachers.map(async (t) => {
+        const teacherStatsPromises = teachers.map(async (t: { id: string; name: string }) => {
           try {
             const s = await getTeacherStats(t.id);
             return {
