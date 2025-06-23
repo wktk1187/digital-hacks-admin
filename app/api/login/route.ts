@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from('admins')
-    .select('email, pass_hash')
+    .select('email, pass_hash, password')
     .eq('email', email)
     .single();
 
@@ -19,11 +19,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, message: '認証に失敗しました' }, { status: 401 });
   }
 
-  // argon2 でハッシュ検証
-  const valid = await argon2.verify(data.pass_hash, password);
+  let valid = false;
+  if ((data as any).pass_hash) {
+    try {
+      valid = await argon2.verify((data as any).pass_hash, password);
+    } catch (_) { valid = false; }
+  }
+  // fallback: plain comparison until全レコードハッシュ移行
+  if (!valid && (data as any).password) {
+    valid = password === (data as any).password;
+  }
+
   if (!valid) {
     return NextResponse.json({ ok: false, message: '認証に失敗しました' }, { status: 401 });
   }
 
-  return NextResponse.json({ ok: true, email: data.email, name: '管理者' });
+  return NextResponse.json({ ok: true, email: (data as any).email, name: '管理者' });
 } 
