@@ -4,11 +4,12 @@ import { supabase } from '@/lib/supabase';
 export async function POST(req: NextRequest) {
   try {
     const { email_teacher, duration = 0, delta_count = 1 } = await req.json();
-    await supabase.rpc('update_meeting_stats', {
+    const { error } = await supabase.rpc('update_meeting_stats', {
       p_email: email_teacher,
       p_duration: duration,
       p_delta: delta_count,
     });
+    if (error) throw new Error(error.message);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error(e);
