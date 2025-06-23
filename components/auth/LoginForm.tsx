@@ -15,7 +15,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const ok = await onLogin(email, password);
-    if (!ok) setError('メールアドレスまたはパスワードが違います');
+    setError(ok ? null : 'メールアドレスまたはパスワードが違います');
   };
 
   return (

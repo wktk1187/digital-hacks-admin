@@ -183,9 +183,7 @@ export default function DashboardPage() {
       if (!res.ok) return false;
       const u: UserData = { name: res.name ?? '管理者', email: res.email, role: 'admin' };
       setUser(u);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('dashboardUser', JSON.stringify(u));
-      }
+      // 永続化せず、メモリ上だけで保持
       return true;
     } catch (e) {
       console.error(e);
@@ -292,18 +290,6 @@ export default function DashboardPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
-
-  // 初回マウント時に localStorage から復元
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const stored = localStorage.getItem('dashboardUser');
-    if (stored) {
-      try {
-        const parsed: UserData = JSON.parse(stored);
-        setUser(parsed);
-      } catch (_) {}
-    }
   }, []);
 
   /* ---------- レンダリング ---------- */
