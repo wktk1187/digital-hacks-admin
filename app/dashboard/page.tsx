@@ -164,9 +164,20 @@ export default function DashboardPage() {
   }, [hasUnsavedChanges, settings.autoSave]);
 
   /* ---------- ハンドラ ---------- */
-  const handleLogin = () =>
-    setUser({ name: "管理者", email: "admin@example.com", role: "admin" });
-  const handleLogout = () => setUser(null);
+  const handleLogin = () => {
+    const u: UserData = { name: "管理者", email: "admin@example.com", role: "admin" };
+    setUser(u);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dashboardUser', JSON.stringify(u));
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('dashboardUser');
+    }
+  };
 
   const updateTotalStats = (field: keyof MeetingData, value: number) => {
     if (!meetingData) return;
@@ -255,6 +266,18 @@ export default function DashboardPage() {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, []);
+
+  // 初回マウント時に localStorage から復元
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem('dashboardUser');
+    if (stored) {
+      try {
+        const parsed: UserData = JSON.parse(stored);
+        setUser(parsed);
+      } catch (_) {}
+    }
   }, []);
 
   /* ---------- レンダリング ---------- */
