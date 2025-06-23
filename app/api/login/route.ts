@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from('admins')
-    .select('email, pass_hash, password')
+    .select('email, pass_hash, password_hash, password')
     .eq('email', email)
     .single();
 
@@ -20,9 +20,10 @@ export async function POST(req: NextRequest) {
   }
 
   let valid = false;
-  if ((data as any).pass_hash) {
+  const hash = (data as any).pass_hash ?? (data as any).password_hash;
+  if (hash) {
     try {
-      valid = await argon2.verify((data as any).pass_hash, password);
+      valid = await argon2.verify(hash, password);
     } catch (_) { valid = false; }
   }
   // fallback: plain comparison until全レコードハッシュ移行
