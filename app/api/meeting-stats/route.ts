@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req: NextRequest) {
   try {
     const { email_teacher, duration = 0, delta_count = 1 } = await req.json();
-    const { error } = await supabase.rpc('update_meeting_stats', {
+    const { error } = await supabaseAdmin.rpc('update_meeting_stats', {
       p_email: email_teacher,
       p_duration: duration,
       p_delta: delta_count,
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const email = searchParams.get('email');
   if (email) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('v_stats_teacher')
       .select('*')
       .eq('email', email)
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     if (error) return NextResponse.json({ error }, { status: 400 });
     return NextResponse.json(data);
   } else {
-    const { data, error } = await supabase.from('v_stats_all').select('*').single();
+    const { data, error } = await supabaseAdmin.from('v_stats_all').select('*').single();
     if (error) return NextResponse.json({ error }, { status: 400 });
     return NextResponse.json(data);
   }
