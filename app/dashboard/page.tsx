@@ -82,9 +82,10 @@ export default function DashboardPage() {
               monthlyCount: s?.month_total ?? 0,
               yearlyCount: s?.year_total ?? 0,
               avgMinutes:
-                s && s.day_total > 0
-                  ? Math.round((s.total_minutes / s.day_total) * 10) / 10
-                  : 0,
+                s?.avg_minutes ??
+                (s && s.day_total > 0 && (s.total_minutes ?? 0) > 0
+                  ? Math.round(((s.total_minutes as number) / s.day_total) * 10) / 10
+                  : 0),
             } as TeacherStatsType;
           } catch (e) {
             // データが無い場合など
@@ -101,18 +102,37 @@ export default function DashboardPage() {
 
         const teacherStats = await Promise.all(teacherStatsPromises);
 
+        // カレンダー生成
+        const calendar = generateCalendarData(
+          currentDate.getFullYear(),
+          currentDate.getMonth()
+        );
+        // 当日セルに day_total を反映
+        const today = new Date();
+        if (
+          today.getFullYear() === currentDate.getFullYear() &&
+          today.getMonth() === currentDate.getMonth()
+        ) {
+          const idx = calendar.findIndex((d) => d.date === today.getDate());
+          if (idx !== -1) {
+            calendar[idx] = {
+              ...calendar[idx],
+              count: all?.day_total ?? 0,
+              hasData: (all?.day_total ?? 0) > 0,
+            };
+          }
+        }
+
         const data: MeetingData = {
           totalDaily: all?.day_total ?? 0,
           totalMonthly: all?.month_total ?? 0,
           totalYearly: all?.year_total ?? 0,
           avgMinutes:
-            all && all.day_total > 0
-              ? Math.round((all.total_minutes / all.day_total) * 10) / 10
-              : 0,
-          calendarData: generateCalendarData(
-            currentDate.getFullYear(),
-            currentDate.getMonth()
-          ),
+            all?.avg_minutes ??
+            (all && all.day_total > 0 && (all.total_minutes ?? 0) > 0
+              ? Math.round(((all.total_minutes as number) / all.day_total) * 10) / 10
+              : 0),
+          calendarData: calendar,
           teacherStats,
         };
 
