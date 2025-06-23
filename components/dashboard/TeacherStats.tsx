@@ -5,6 +5,7 @@ import { Users, Plus, Trash2, BarChart2 } from 'lucide-react';
 import EditableCell from './EditableCell';
 import { TeacherStats as TeacherStatsType, MeetingData } from '@/types/dashboard';
 import AddTeacherModal from './AddTeacherModal';
+import DeleteTeacherModal from './DeleteTeacherModal';
 
 interface TeacherStatsProps {
   teacherStats: TeacherStatsType[];
@@ -20,15 +21,14 @@ export default function TeacherStats({
   onDeleteTeacher 
 }: TeacherStatsProps) {
   const [showAdd, setShowAdd] = useState(false);
+  const [teacherToDelete, setTeacherToDelete] = useState<TeacherStatsType | null>(null);
 
   const handleAddTeacher = () => {
     setShowAdd(true);
   };
 
-  const handleDeleteTeacher = (teacher: TeacherStatsType) => {
-    if (confirm(`${teacher.name}を削除してもよろしいですか？\nこの操作は取り消せません。`)) {
-      onDeleteTeacher(teacher.id);
-    }
+  const handleDeleteTeacherClick = (teacher: TeacherStatsType) => {
+    setTeacherToDelete(teacher);
   };
 
   return (
@@ -60,7 +60,7 @@ export default function TeacherStats({
               <div className="flex items-center gap-2">
                 <BarChart2 className="w-5 h-5 text-gray-400" />
                 <button
-                  onClick={() => handleDeleteTeacher(teacher)}
+                  onClick={() => handleDeleteTeacherClick(teacher)}
                   className="opacity-0 group-hover:opacity-100 p-1.5 text-red-600 hover:bg-red-50 rounded transition-all"
                   title="講師を削除"
                 >
@@ -116,6 +116,19 @@ export default function TeacherStats({
         onAdd={(t) => {
           onAddTeacher(t);
           setShowAdd(false);
+        }}
+      />
+
+      {/* 削除確認モーダル */}
+      <DeleteTeacherModal
+        isOpen={teacherToDelete !== null}
+        teacherName={teacherToDelete?.name ?? ''}
+        onCancel={() => setTeacherToDelete(null)}
+        onConfirm={() => {
+          if (teacherToDelete) {
+            onDeleteTeacher(teacherToDelete.id);
+          }
+          setTeacherToDelete(null);
         }}
       />
     </>
