@@ -39,7 +39,15 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(meetingData === null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [user, setUser] = useState<UserData | null>(null);
+  const [user, setUser] = useState<UserData | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('dashboardUser');
+        if (stored) return JSON.parse(stored) as UserData;
+      } catch (_) {}
+    }
+    return null;
+  });
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<SettingsData>({
     emailNotifications: true,
@@ -183,7 +191,9 @@ export default function DashboardPage() {
       if (!res.ok) return false;
       const u: UserData = { name: res.name ?? '管理者', email: res.email, role: 'admin' };
       setUser(u);
-      // 永続化せず、メモリ上だけで保持
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('dashboardUser', JSON.stringify(u));
+      }
       return true;
     } catch (e) {
       console.error(e);
