@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 // GET /api/teachers  : 一覧取得
 export async function GET() {
-  const { data, error } = await supabase.from('teachers').select('*').order('name');
+  const { data, error } = await supabaseAdmin.from('teachers').select('*').order('name');
   if (error) return NextResponse.json({ error }, { status: 400 });
   return NextResponse.json(data);
 }
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   if (!id || !name) {
     return NextResponse.json({ error: 'id and name required' }, { status: 400 });
   }
-  const { error } = await supabase.from('teachers').insert({ email: id, name }).single();
+  const { error } = await supabaseAdmin.from('teachers').insert({ email: id, name }).single();
   if (error) return NextResponse.json({ error }, { status: 400 });
   return NextResponse.json({ ok: true });
 } 
