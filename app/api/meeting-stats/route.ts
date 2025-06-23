@@ -3,9 +3,26 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email_teacher, duration = 0, delta_count = 1 } = await req.json();
+    const {
+      email_teacher,
+      email,
+      teacherEmail,
+      duration = 0,
+      delta_count = 1,
+    } = await req.json();
+
+    // 受け取った複数候補のキーから講師メールを決定
+    const teacherEmailResolved = (email_teacher ?? email ?? teacherEmail ?? '').trim();
+
+    if (!teacherEmailResolved) {
+      return NextResponse.json(
+        { ok: false, message: '講師メールアドレスが指定されていません' },
+        { status: 400 },
+      );
+    }
+
     const { error } = await supabaseAdmin.rpc('update_meeting_stats', {
-      p_email: email_teacher,
+      p_email: teacherEmailResolved,
       p_duration: duration,
       p_delta: delta_count,
     });
