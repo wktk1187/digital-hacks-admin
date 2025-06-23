@@ -1,9 +1,10 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Users, Plus, Trash2, BarChart2 } from 'lucide-react';
 import EditableCell from './EditableCell';
 import { TeacherStats as TeacherStatsType, MeetingData } from '@/types/dashboard';
+import AddTeacherModal from './AddTeacherModal';
 
 interface TeacherStatsProps {
   teacherStats: TeacherStatsType[];
@@ -18,25 +19,10 @@ export default function TeacherStats({
   onAddTeacher,
   onDeleteTeacher 
 }: TeacherStatsProps) {
+  const [showAdd, setShowAdd] = useState(false);
+
   const handleAddTeacher = () => {
-    const input = prompt('追加する講師を「メールアドレス,名前」の形式で入力してください\n例: teacher@example.com,山田太郎');
-    if (!input) return;
-    const [emailRaw, nameRaw] = input.split(',');
-    const email = emailRaw?.trim();
-    const name = nameRaw?.trim();
-    if (!email || !name) {
-      alert('入力形式が正しくありません。メールアドレスと名前をカンマ区切りで入力してください。');
-      return;
-    }
-    const newTeacher: TeacherStatsType = {
-      id: email,
-      name,
-      dailyCount: 0,
-      monthlyCount: 0,
-      yearlyCount: 0,
-      avgMinutes: 0
-    };
-    onAddTeacher(newTeacher);
+    setShowAdd(true);
   };
 
   const handleDeleteTeacher = (teacher: TeacherStatsType) => {
@@ -124,6 +110,14 @@ export default function TeacherStats({
           </div>
         ))}
       </div>
+      <AddTeacherModal
+        isOpen={showAdd}
+        onClose={() => setShowAdd(false)}
+        onAdd={(t) => {
+          onAddTeacher(t);
+          setShowAdd(false);
+        }}
+      />
     </>
   );
 }
