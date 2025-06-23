@@ -16,6 +16,7 @@ import {
 } from "@/types/dashboard";
 import { generateCalendarData, getInitialTeachers } from "@/lib/utils";
 import { addTeacherApi, deleteTeacherApi } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 export default function DashboardPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -138,6 +139,40 @@ export default function DashboardPage() {
       return d;
     });
   };
+
+  useEffect(() => {
+    // Supabase Realtime subscription: stats_all 更新
+    const channel = supabase
+      .channel('dashboard-stats')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'stats_all' },
+        (payload) => {
+          const r: any = payload.new;
+          updateTotalStats('totalDaily', r.day_total);
+          updateTotalStats('totalMonthly', r.month_total);
+          updateTotalStats('totalYearly', r.year_total);
+          updateTotalStats('avgMinutes', r.day_total > 0 ? Math.round((r.total_minutes / r.day_total) * 10) / 10 : 0);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'stats_teacher' },
+        (payload) => {
+          const r: any = payload.new;
+          updateTeacherStats(r.email, 'dailyCount', r.day_total);
+          updateTeacherStats(r.email, 'monthlyCount', r.month_total);
+          updateTeacherStats(r.email, 'yearlyCount', r.year_total);
+          const avg = r.day_total > 0 ? Math.round((r.total_minutes / r.day_total) * 10) / 10 : 0;
+          updateTeacherStats(r.email, 'avgMinutes', avg);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   /* ---------- レンダリング ---------- */
   if (!user) return <LoginForm onLogin={handleLogin} />;
