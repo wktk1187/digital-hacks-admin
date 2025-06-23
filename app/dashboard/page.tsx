@@ -42,7 +42,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserData | null>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('dashboardUser');
+        const stored = sessionStorage.getItem('dashboardUser');
         if (stored) return JSON.parse(stored) as UserData;
       } catch (_) {}
     }
@@ -192,7 +192,7 @@ export default function DashboardPage() {
       const u: UserData = { name: res.name ?? '管理者', email: res.email, role: 'admin' };
       setUser(u);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('dashboardUser', JSON.stringify(u));
+        sessionStorage.setItem('dashboardUser', JSON.stringify(u));
       }
       return true;
     } catch (e) {
@@ -204,7 +204,7 @@ export default function DashboardPage() {
   const handleLogout = () => {
     setUser(null);
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('dashboardUser');
+      sessionStorage.removeItem('dashboardUser');
     }
   };
 
