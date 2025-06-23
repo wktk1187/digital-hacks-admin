@@ -15,7 +15,12 @@ import {
   UserData,
 } from "@/types/dashboard";
 import { generateCalendarData, getInitialTeachers } from "@/lib/utils";
-import { addTeacherApi, deleteTeacherApi } from "@/lib/api";
+import {
+  addTeacherApi,
+  deleteTeacherApi,
+  getAllStats,
+  getTeacherStats,
+} from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
 export default function DashboardPage() {
@@ -58,11 +63,69 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      // TODO: 実際は API から取得
-      const data = generateSampleData();
-      setMeetingData(data);
-      setLoading(false);
+
+      try {
+        // ① 全体統計を取得
+        const all = await getAllStats();
+
+        // ② 講師リスト
+        const teachers = getInitialTeachers();
+
+        // ③ 講師別統計を並列取得
+        const teacherStatsPromises = teachers.map(async (t) => {
+          try {
+            const s = await getTeacherStats(t.id);
+            return {
+              id: t.id,
+              name: t.name,
+              dailyCount: s?.day_total ?? 0,
+              monthlyCount: s?.month_total ?? 0,
+              yearlyCount: s?.year_total ?? 0,
+              avgMinutes:
+                s && s.day_total > 0
+                  ? Math.round((s.total_minutes / s.day_total) * 10) / 10
+                  : 0,
+            } as TeacherStatsType;
+          } catch (e) {
+            // データが無い場合など
+            return {
+              id: t.id,
+              name: t.name,
+              dailyCount: 0,
+              monthlyCount: 0,
+              yearlyCount: 0,
+              avgMinutes: 0,
+            } as TeacherStatsType;
+          }
+        });
+
+        const teacherStats = await Promise.all(teacherStatsPromises);
+
+        const data: MeetingData = {
+          totalDaily: all?.day_total ?? 0,
+          totalMonthly: all?.month_total ?? 0,
+          totalYearly: all?.year_total ?? 0,
+          avgMinutes:
+            all && all.day_total > 0
+              ? Math.round((all.total_minutes / all.day_total) * 10) / 10
+              : 0,
+          calendarData: generateCalendarData(
+            currentDate.getFullYear(),
+            currentDate.getMonth()
+          ),
+          teacherStats,
+        };
+
+        setMeetingData(data);
+      } catch (e) {
+        console.error(e);
+        // フォールバック: サンプルデータ
+        setMeetingData(generateSampleData());
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate]);
