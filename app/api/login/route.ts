@@ -9,10 +9,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, message: 'メールとパスワードを入力してください' }, { status: 400 });
   }
 
+  // メールは小文字・前後空白を除去して比較する
+  const normalizedEmail: string = (email as string).trim().toLowerCase();
+
   const { data, error } = await supabaseAdmin
     .from('admins')
     .select('email, pass_hash, password_hash, password')
-    .eq('email', email)
+    .eq('email', normalizedEmail)
     .single();
 
   if (error || !data) {
@@ -20,11 +23,17 @@ export async function POST(req: NextRequest) {
   }
 
   let valid = false;
-  const hash = (data as any).pass_hash ?? (data as any).password_hash;
+  const rawHash: string | null =
+    ((data as any).pass_hash ?? (data as any).password_hash) ?? null;
+
+  const hash = rawHash ? rawHash.trim() : null;
+
   if (hash) {
     try {
       valid = await argon2.verify(hash, password);
-    } catch (_) { valid = false; }
+    } catch (_) {
+      valid = false;
+    }
   }
   // fallback: plain comparison until全レコードハッシュ移行
   if (!valid && (data as any).password) {
