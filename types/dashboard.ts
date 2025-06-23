@@ -25,7 +25,7 @@ export interface DayData {
   export interface UserData {
     name: string;
     email: string;
-    role: 'admin' | 'teacher' | 'viewer';
+    role: 'admin';
   }
   
   export interface SettingsData {

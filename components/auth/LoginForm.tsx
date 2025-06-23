@@ -1,18 +1,21 @@
 "use client";
 
-import React, { FormEvent } from 'react';
+import React, { FormEvent, useState } from 'react';
 
 interface LoginFormProps {
-  onLogin: (email: string, password: string) => void;
+  onLogin: (email: string, password: string) => Promise<boolean>;
 }
 
 export default function LoginForm({ onLogin }: LoginFormProps) {
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    onLogin(email, password);
+    const ok = await onLogin(email, password);
+    if (!ok) setError('メールアドレスまたはパスワードが違います');
   };
 
   return (
@@ -35,6 +38,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
+            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
             <button
               type="submit"
               className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"

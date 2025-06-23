@@ -21,6 +21,7 @@ import {
   getAllStats,
   getTeacherStats,
   getTeachers,
+  loginApi,
 } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
@@ -176,11 +177,19 @@ export default function DashboardPage() {
   }, [hasUnsavedChanges, settings.autoSave]);
 
   /* ---------- ハンドラ ---------- */
-  const handleLogin = () => {
-    const u: UserData = { name: "管理者", email: "admin@example.com", role: "admin" };
-    setUser(u);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('dashboardUser', JSON.stringify(u));
+  const handleLogin = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const res = await loginApi(email, password);
+      if (!res.ok) return false;
+      const u: UserData = { name: res.name ?? '管理者', email: res.email, role: 'admin' };
+      setUser(u);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('dashboardUser', JSON.stringify(u));
+      }
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
     }
   };
 

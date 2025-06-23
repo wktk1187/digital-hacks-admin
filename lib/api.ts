@@ -34,4 +34,13 @@ export const getAllStats = async () => {
 export const getTeacherStats = async (email: string) => {
   const res = await fetch(`/api/meeting-stats?email=${encodeURIComponent(email)}`);
   return res.json();
+};
+
+export const loginApi = async (email: string, password: string) => {
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  return res.json();
 }; 
