@@ -217,14 +217,19 @@ export default function DashboardPage() {
     addTeacherApi(teacher).catch(console.error);
   };
 
-  const deleteTeacher = (teacherId: string) => {
+  const deleteTeacher = async (teacherId: string) => {
     if (!meetingData) return;
-    setMeetingData({
-      ...meetingData,
-      teacherStats: meetingData.teacherStats.filter((t) => t.id !== teacherId),
-    });
-    setHasUnsavedChanges(true);
-    deleteTeacherApi(teacherId).catch(console.error);
+    try {
+      await deleteTeacherApi(teacherId);
+      // 成功した場合のみローカル状態から除去
+      setMeetingData({
+        ...meetingData,
+        teacherStats: meetingData.teacherStats.filter((t) => t.id !== teacherId),
+      });
+      setHasUnsavedChanges(true);
+    } catch (e: any) {
+      alert(e.message ?? '削除に失敗しました');
+    }
   };
 
   const changeMonth = (inc: number) => {

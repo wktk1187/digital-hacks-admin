@@ -13,9 +13,17 @@ export const addTeacherApi = async (teacher: any) => {
 };
 
 export const deleteTeacherApi = async (teacherId: string) => {
-  await fetch(`/api/teachers/${encodeURIComponent(teacherId)}`, {
+  const res = await fetch(`/api/teachers/${encodeURIComponent(teacherId)}`, {
     method: 'DELETE',
   });
+  if (!res.ok) {
+    let msg = '講師の削除に失敗しました';
+    try {
+      const data = await res.json();
+      msg = data?.error?.message ?? msg;
+    } catch (_) {}
+    throw new Error(msg);
+  }
 };
 
 export const getAllStats = async () => {
