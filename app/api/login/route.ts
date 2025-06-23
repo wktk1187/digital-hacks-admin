@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import argon2 from 'argon2';
 
 // POST /api/login { email, password }
 export async function POST(req: NextRequest) {
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from('admins')
-    .select('email, password_hash')
+    .select('email, pass_hash')
     .eq('email', email)
     .single();
 
@@ -18,9 +19,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, message: '認証に失敗しました' }, { status: 401 });
   }
 
-  // 簡易比較 (ハッシュなし)
-  // TODO: bcrypt などに置き換える
-  const valid = password === data.password_hash;
+  // argon2 でハッシュ検証
+  const valid = await argon2.verify(data.pass_hash, password);
   if (!valid) {
     return NextResponse.json({ ok: false, message: '認証に失敗しました' }, { status: 401 });
   }
