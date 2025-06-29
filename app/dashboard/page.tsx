@@ -24,6 +24,7 @@ import {
   loginApi,
 } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import SearchMeeting from "@/components/dashboard/SearchMeeting";
 
 export default function DashboardPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -374,6 +375,8 @@ export default function DashboardPage() {
             />
           ) : (
             <div className="w-full overflow-auto">
+              {/* 検索フォーム */}
+              <SearchMeeting />
               <iframe
                 src="https://docs.google.com/spreadsheets/d/15lgA5kKRUOlMQbdEAJbqwMEZqgb4lO9atTIN82_vUyw/gviz/tq?tqx=out:html&gid=0&tq=select%20B,C,L,R,S,AC,AJ%20where%20AC%20%3D%20%27%E5%8F%97%E8%AC%9B%E4%B8%AD%27"
                 className="w-full h-[800px] border-0"

@@ -43,4 +43,10 @@ export const loginApi = async (email: string, password: string) => {
     body: JSON.stringify({ email, password }),
   });
   return res.json();
+};
+
+// 検索: メールアドレスまたは顧客名で面談回数を取得
+export const searchMeetingCount = async (query: string) => {
+  const res = await fetch(`/api/meeting-count?query=${encodeURIComponent(query)}`);
+  return res.json();
 }; 
