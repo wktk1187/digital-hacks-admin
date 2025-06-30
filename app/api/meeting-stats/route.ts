@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
     // 全体
     const dayRes = await supabaseAdmin
       .from('stats_all_day')
-      .select('total_cnt,total_minutes')
+      .select('total_cnt,total_minutes,key_date')
       .eq('key_date', todayISO)
       .maybeSingle();
     const monthRes = await supabaseAdmin
@@ -115,9 +115,35 @@ export async function GET(req: NextRequest) {
     }
 
     const dayCnt = dayRes.data?.total_cnt ?? 0;
-    const monthCnt = monthRes.data?.total_cnt ?? 0;
-    const yearCnt = yearRes.data?.total_cnt ?? 0;
     const dayMin = dayRes.data?.total_minutes ?? 0;
+
+    // Fallback: if current month / year row無い場合は前月・前年の最終値を保持
+    let monthCnt = monthRes.data?.total_cnt ?? null;
+    let monthMin = monthRes.data?.total_minutes ?? null;
+    if (monthCnt === null) {
+      const prevMonth = await supabaseAdmin
+        .from('stats_all_month')
+        .select('total_cnt,total_minutes')
+        .order('key_year', { ascending: false })
+        .order('key_month', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      monthCnt = prevMonth.data?.total_cnt ?? 0;
+      monthMin = prevMonth.data?.total_minutes ?? 0;
+    }
+
+    let yearCnt = yearRes.data?.total_cnt ?? null;
+    let yearMin = yearRes.data?.total_minutes ?? null;
+    if (yearCnt === null) {
+      const prevYear = await supabaseAdmin
+        .from('stats_all_year')
+        .select('total_cnt,total_minutes')
+        .order('key_year', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      yearCnt = prevYear.data?.total_cnt ?? 0;
+      yearMin = prevYear.data?.total_minutes ?? 0;
+    }
 
     return NextResponse.json({
       day_total: dayCnt,
