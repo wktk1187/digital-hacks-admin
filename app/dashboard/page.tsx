@@ -321,6 +321,18 @@ export default function DashboardPage() {
     };
   }, []);
 
+  // 日付ロールオーバー監視: 1 分ごとに日付が変わったら currentDate を更新
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      if (now.toDateString() !== currentDate.toDateString()) {
+        setCurrentDate(now);
+      }
+    }, 60_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate]);
+
   /* ---------- レンダリング ---------- */
   if (!user) return <LoginForm onLogin={handleLogin} />;
   if (!meetingData) return <div className="p-6">Loading...</div>;
