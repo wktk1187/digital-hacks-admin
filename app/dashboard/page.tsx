@@ -90,7 +90,21 @@ export default function DashboardPage() {
         // ② 講師リスト Supabase から取得
         const teachers = (await getTeachers()) as { id: string; name: string }[];
 
-        // ③ 講師別統計を並列取得
+        // ③ 当月 day 列を取得してカレンダー用にマップ
+        const firstISO = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+          .toISOString()
+          .slice(0, 10);
+        const lastISO = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+          .toISOString()
+          .slice(0, 10);
+
+        const { data: dayRows } = await supabase
+          .from('stats_all_day')
+          .select('key_date,total_cnt')
+          .gte('key_date', firstISO)
+          .lte('key_date', lastISO);
+
+        // ④ 講師別統計を並列取得
         const teacherStatsPromises = teachers.map(async (t: { id: string; name: string }) => {
           try {
             const s = await getTeacherStats(t.id);
@@ -126,21 +140,19 @@ export default function DashboardPage() {
           currentDate.getFullYear(),
           currentDate.getMonth()
         );
-        // 当日セルに day_total を反映
-        const today = new Date();
-        if (
-          today.getFullYear() === currentDate.getFullYear() &&
-          today.getMonth() === currentDate.getMonth()
-        ) {
-          const idx = calendar.findIndex((d) => d.date === today.getDate());
+
+        // dayRows をカレンダーに反映
+        dayRows?.forEach((r) => {
+          const d = new Date(r.key_date);
+          const idx = calendar.findIndex((c) => c.date === d.getDate());
           if (idx !== -1) {
             calendar[idx] = {
               ...calendar[idx],
-              count: all?.day_total ?? 0,
-              hasData: (all?.day_total ?? 0) > 0,
+              count: r.total_cnt,
+              hasData: r.total_cnt > 0,
             };
           }
-        }
+        });
 
         const data: MeetingData = {
           totalDaily: all?.day_total ?? 0,
@@ -270,23 +282,29 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    // Supabase Realtime subscription: stats_all 更新
+    // Supabase Realtime subscription: stats_all_day 更新
     const channel = supabase
       .channel('dashboard-stats')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'stats_all' },
+        { event: 'UPDATE', schema: 'public', table: 'stats_all_day' },
         (payload) => {
           const r: any = payload.new;
-          updateTotalStats('totalDaily', r.day_total);
-          updateTotalStats('totalMonthly', r.month_total);
-          updateTotalStats('totalYearly', r.year_total);
-          updateTotalStats('avgMinutes', r.day_total > 0 ? Math.round((r.total_minutes / r.day_total) * 10) / 10 : 0);
+          // r.key_date は YYYY-MM-DD
+          const d = new Date(r.key_date);
+          updateTotalStats('totalDaily', r.total_cnt);
+          // 月・年は別トリガーで更新されるので fetchData で再取得
+          if (d.getFullYear() === currentDate.getFullYear() && d.getMonth() === currentDate.getMonth()) {
+            const idx = meetingData?.calendarData.findIndex((c) => c.date === d.getDate());
+            if (idx !== undefined && idx !== -1 && meetingData) {
+              updateCalendarDay(idx, r.total_cnt);
+            }
+          }
         }
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'stats_teacher' },
+        { event: 'UPDATE', schema: 'public', table: 'stats_teacher_day' },
         (payload) => {
           const r: any = payload.new;
           updateTeacherStats(r.email, 'dailyCount', r.day_total);
