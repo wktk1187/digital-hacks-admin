@@ -294,11 +294,12 @@ export default function DashboardPage() {
           const d = new Date(r.key_date);
           updateTotalStats('totalDaily', r.total_cnt);
           // 月・年は別トリガーで更新されるので fetchData で再取得
-          if (d.getFullYear() === currentDate.getFullYear() && d.getMonth() === currentDate.getMonth()) {
+          if (
+            d.getFullYear() === currentDate.getFullYear() &&
+            d.getMonth()    === currentDate.getMonth()
+          ) {
             const idx = meetingData?.calendarData.findIndex((c) => c.date === d.getDate());
-            if (idx !== undefined && idx !== -1 && meetingData) {
-              updateCalendarDay(idx, r.total_cnt);
-            }
+            if (idx !== undefined && idx !== -1) updateCalendarDay(idx, r.total_cnt);
           }
         }
       )
