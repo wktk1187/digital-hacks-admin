@@ -84,13 +84,25 @@ export async function GET(req: NextRequest) {
     const monthCnt = monthRes.data?.total_cnt ?? 0;
     const yearCnt = yearRes.data?.total_cnt ?? 0;
     const dayMin = dayRes.data?.total_minutes ?? 0;
+    const monthMin = monthRes.data?.total_minutes ?? 0;
+    const yearMin = yearRes.data?.total_minutes ?? 0;
+
+    // 平均面談時間 (分)
+    const avg =
+      dayCnt > 0
+        ? Math.round((dayMin / dayCnt) * 10) / 10
+        : monthCnt > 0
+        ? Math.round((monthMin / monthCnt) * 10) / 10
+        : yearCnt > 0
+        ? Math.round((yearMin / yearCnt) * 10) / 10
+        : 0;
 
     return NextResponse.json({
       day_total: dayCnt,
       month_total: monthCnt,
       year_total: yearCnt,
       total_minutes: dayMin,
-      avg_minutes: dayCnt > 0 ? Math.round((dayMin / dayCnt) * 10) / 10 : 0,
+      avg_minutes: avg,
     });
   } else {
     // 全体
@@ -123,12 +135,22 @@ export async function GET(req: NextRequest) {
     const yearCnt = yearRes.data?.total_cnt ?? 0;
     const yearMin = yearRes.data?.total_minutes ?? 0;
 
+    // 平均面談時間 (分)
+    const avg =
+      dayCnt > 0
+        ? Math.round((dayMin / dayCnt) * 10) / 10
+        : monthCnt > 0
+        ? Math.round((monthMin / monthCnt) * 10) / 10
+        : yearCnt > 0
+        ? Math.round((yearMin / yearCnt) * 10) / 10
+        : 0;
+
     return NextResponse.json({
       day_total: dayCnt,
       month_total: monthCnt,
       year_total: yearCnt,
       total_minutes: dayMin,
-      avg_minutes: dayCnt > 0 ? Math.round((dayMin / dayCnt) * 10) / 10 : 0,
+      avg_minutes: avg,
     });
   }
 } 
