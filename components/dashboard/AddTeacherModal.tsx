@@ -35,10 +35,12 @@ export default function AddTeacherModal({ isOpen, onClose, onAdd }: AddTeacherMo
     const newTeacher: TeacherStatsType = {
       id: email.trim(),
       name: name.trim(),
-      dailyCount: 0,
-      monthlyCount: 0,
-      yearlyCount: 0,
-      avgMinutes: 0,
+      teacher: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+      entry: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+      avgMinutes: {
+        teacher: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+        entry: { daily: 0, monthly: 0, yearly: 0, total: 0 }
+      }
     };
     onAdd(newTeacher);
     reset();
