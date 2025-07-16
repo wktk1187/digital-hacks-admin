@@ -9,24 +9,6 @@ interface AverageTimeTabProps {
   currentDate: Date;
 }
 
-const AvgTimeCard = ({ 
-  title, 
-  avgMinutes, 
-  color 
-}: { 
-  title: string; 
-  avgMinutes: number; 
-  color: string; 
-}) => (
-  <div className="bg-white rounded-lg border p-3">
-    <h3 className={`text-sm font-medium mb-2 ${color}`}>{title}</h3>
-    <div className="text-center">
-      <div className="text-xl font-bold text-gray-800">{avgMinutes}</div>
-      <div className="text-xs text-gray-600">分</div>
-    </div>
-  </div>
-);
-
 export default function AverageTimeTab({ meetingData, currentDate }: AverageTimeTabProps) {
   // 全体平均時間を計算（講師面談と受講開始面談を合わせた累計）
   const calculateOverallAverage = () => {
@@ -62,11 +44,12 @@ export default function AverageTimeTab({ meetingData, currentDate }: AverageTime
       <div className="bg-gray-50 rounded-lg p-3">
         <h3 className="text-sm font-medium text-gray-700 mb-2">全体平均</h3>
         <div className="w-48">
-          <AvgTimeCard 
-            title="全面談（累計）" 
-            avgMinutes={calculateOverallAverage()}
-            color="text-purple-600"
-          />
+          <div className="bg-white rounded-lg border p-3">
+            <div className="text-center">
+              <div className="text-xl font-bold text-purple-600">{calculateOverallAverage()}</div>
+              <div className="text-xs text-gray-600">分</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -87,18 +70,18 @@ export default function AverageTimeTab({ meetingData, currentDate }: AverageTime
 
             return (
               <div key={teacher.id} className="bg-white rounded-lg border p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    {index + 1}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                      {index + 1}
+                    </div>
+                    <h4 className="font-medium text-sm">{teacher.name}</h4>
                   </div>
-                  <h4 className="font-medium text-sm">{teacher.name}</h4>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-purple-600">{teacherOverallAvg}</div>
+                    <div className="text-xs text-gray-600">分</div>
+                  </div>
                 </div>
-                
-                <AvgTimeCard 
-                  title="全面談（累計）" 
-                  avgMinutes={teacherOverallAvg}
-                  color="text-purple-600"
-                />
               </div>
             );
           })}
