@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { Settings, LogOut, LogIn, User, BarChart2 } from "lucide-react";
+import { Settings, LogOut, LogIn, User, BarChart2, Calendar } from "lucide-react";
 import { UserData } from "@/types/dashboard";
 
 interface HeaderProps {
   user: UserData | null;
   onLogout: () => void;
   onSettingsClick: () => void;
+  onSyncClick: () => void;
 }
 
-export default function Header({ user, onLogout, onSettingsClick }: HeaderProps) {
+export default function Header({ user, onLogout, onSettingsClick, onSyncClick }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
@@ -29,6 +30,15 @@ export default function Header({ user, onLogout, onSettingsClick }: HeaderProps)
         {/* Right area */}
         {user ? (
           <div className="flex items-center gap-4 relative">
+            {/* Calendar Sync Button */}
+            <button
+              onClick={onSyncClick}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              title="Google Calendar 同期"
+            >
+              <Calendar className="w-5 h-5" />
+            </button>
+
             {/* Settings Button */}
             <button
               onClick={onSettingsClick}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/dashboard/Header";
 import SettingsModal from "@/components/dashboard/SettingsModal";
+import CalendarSyncModal from "@/components/dashboard/CalendarSyncModal";
 import StatsCard from "@/components/dashboard/StatsCard";
 import MonthlyCalendar from "@/components/dashboard/MonthlyCalendar";
 import TeacherStats from "@/components/dashboard/TeacherStats";
@@ -52,6 +53,7 @@ export default function DashboardPage() {
     return null;
   });
   const [showSettings, setShowSettings] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const [settings, setSettings] = useState<SettingsData>({
     emailNotifications: true,
     dailyReport: true,
@@ -335,12 +337,21 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header user={user} onLogout={handleLogout} onSettingsClick={() => setShowSettings(true)} />
+      <Header 
+        user={user} 
+        onLogout={handleLogout} 
+        onSettingsClick={() => setShowSettings(true)}
+        onSyncClick={() => setShowSyncModal(true)}
+      />
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         settings={settings}
         onSave={setSettings}
+      />
+      <CalendarSyncModal
+        isOpen={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
       />
 
       <div className="max-w-6xl mx-auto p-4">
