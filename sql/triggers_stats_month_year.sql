@@ -21,20 +21,24 @@ declare
   v_date    date;
   v_year    int;
   v_month   int;
+  v_cat     text;
 begin
   -- INSERT / UPDATE / DELETE で差分を計算
   if TG_OP = 'INSERT' then
     cnt_diff := NEW.total_cnt;
     min_diff := NEW.total_minutes;
     v_date   := NEW.key_date;
+    v_cat    := NEW.category;
   elsif TG_OP = 'UPDATE' then
     cnt_diff := NEW.total_cnt  - COALESCE(OLD.total_cnt, 0);
     min_diff := NEW.total_minutes - COALESCE(OLD.total_minutes, 0);
     v_date   := NEW.key_date;
+    v_cat    := NEW.category;
   elsif TG_OP = 'DELETE' then
     cnt_diff := - OLD.total_cnt;
     min_diff := - OLD.total_minutes;
     v_date   := OLD.key_date;
+    v_cat    := OLD.category;
   end if;
 
   -- 変化がなければ終了
@@ -50,16 +54,16 @@ begin
   v_month := extract(month from v_date);
 
   -- 月次テーブルを更新 (upsert)
-  insert into stats_all_month(key_year, key_month, total_cnt, total_minutes)
-  values (v_year, v_month, cnt_diff, min_diff)
-  on conflict (key_year, key_month) do update
+  insert into stats_all_month(key_year, key_month, category, total_cnt, total_minutes)
+  values (v_year, v_month, v_cat, cnt_diff, min_diff)
+  on conflict (key_year, key_month, category) do update
     set total_cnt     = stats_all_month.total_cnt     + EXCLUDED.total_cnt,
         total_minutes = stats_all_month.total_minutes + EXCLUDED.total_minutes;
 
   -- 年次テーブルを更新 (upsert)
-  insert into stats_all_year(key_year, total_cnt, total_minutes)
-  values (v_year, cnt_diff, min_diff)
-  on conflict (key_year) do update
+  insert into stats_all_year(key_year, category, total_cnt, total_minutes)
+  values (v_year, v_cat, cnt_diff, min_diff)
+  on conflict (key_year, category) do update
     set total_cnt     = stats_all_year.total_cnt     + EXCLUDED.total_cnt,
         total_minutes = stats_all_year.total_minutes + EXCLUDED.total_minutes;
 
@@ -97,22 +101,26 @@ declare
   v_year    int;
   v_month   int;
   v_email   text;
+  v_cat     text;
 begin
   if TG_OP = 'INSERT' then
     cnt_diff := NEW.total_cnt;
     min_diff := NEW.total_minutes;
     v_date   := NEW.key_date;
     v_email  := NEW.email;
+    v_cat    := NEW.category;
   elsif TG_OP = 'UPDATE' then
     cnt_diff := NEW.total_cnt  - COALESCE(OLD.total_cnt, 0);
     min_diff := NEW.total_minutes - COALESCE(OLD.total_minutes, 0);
     v_date   := NEW.key_date;
     v_email  := NEW.email;
+    v_cat    := NEW.category;
   elsif TG_OP = 'DELETE' then
     cnt_diff := - OLD.total_cnt;
     min_diff := - OLD.total_minutes;
     v_date   := OLD.key_date;
     v_email  := OLD.email;
+    v_cat    := OLD.category;
   end if;
 
   if cnt_diff = 0 and min_diff = 0 then
@@ -127,16 +135,16 @@ begin
   v_month := extract(month from v_date);
 
   -- 月次
-  insert into stats_teacher_month(email, key_year, key_month, total_cnt, total_minutes)
-  values (v_email, v_year, v_month, cnt_diff, min_diff)
-  on conflict (email, key_year, key_month) do update
+  insert into stats_teacher_month(email, key_year, key_month, category, total_cnt, total_minutes)
+  values (v_email, v_year, v_month, v_cat, cnt_diff, min_diff)
+  on conflict (email, key_year, key_month, category) do update
     set total_cnt     = stats_teacher_month.total_cnt     + EXCLUDED.total_cnt,
         total_minutes = stats_teacher_month.total_minutes + EXCLUDED.total_minutes;
 
   -- 年次
-  insert into stats_teacher_year(email, key_year, total_cnt, total_minutes)
-  values (v_email, v_year, cnt_diff, min_diff)
-  on conflict (email, key_year) do update
+  insert into stats_teacher_year(email, key_year, category, total_cnt, total_minutes)
+  values (v_email, v_year, v_cat, cnt_diff, min_diff)
+  on conflict (email, key_year, category) do update
     set total_cnt     = stats_teacher_year.total_cnt     + EXCLUDED.total_cnt,
         total_minutes = stats_teacher_year.total_minutes + EXCLUDED.total_minutes;
 

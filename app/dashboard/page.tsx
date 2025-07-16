@@ -7,19 +7,21 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import MonthlyCalendar from "@/components/dashboard/MonthlyCalendar";
 import TeacherStats from "@/components/dashboard/TeacherStats";
 import LoginForm from "@/components/auth/LoginForm";
+import AverageTimeTab from "@/components/dashboard/AverageTimeTab";
 import {
   MeetingData,
   SettingsData,
   TeacherStats as TeacherStatsType,
   TabType,
   UserData,
+  CategoryStats,
 } from "@/types/dashboard";
 import { generateCalendarData, getInitialTeachers } from "@/lib/utils";
 import {
   addTeacherApi,
   deleteTeacherApi,
-  getAllStats,
-  getTeacherStats,
+  getAllStatsWithCategories,
+  getTeacherStatsWithCategories,
   getTeachers,
   loginApi,
 } from "@/lib/api";
@@ -60,10 +62,8 @@ export default function DashboardPage() {
   const generateSampleData = (): MeetingData => {
     const teachers = getInitialTeachers() as { id: string; name: string }[];
     return {
-      totalDaily: 0,
-      totalMonthly: 0,
-      totalYearly: 0,
-      avgMinutes: 0,
+      teacher: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+      entry: { daily: 0, monthly: 0, yearly: 0, total: 0 },
       calendarData: generateCalendarData(
         currentDate.getFullYear(),
         currentDate.getMonth()
@@ -71,10 +71,12 @@ export default function DashboardPage() {
       teacherStats: teachers.map((t) => ({
         id: t.id,
         name: t.name,
-        dailyCount: 0,
-        monthlyCount: 0,
-        yearlyCount: 0,
-        avgMinutes: 0,
+        teacher: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+        entry: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+        avgMinutes: {
+          teacher: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+          entry: { daily: 0, monthly: 0, yearly: 0, total: 0 }
+        }
       })),
     };
   };
@@ -85,7 +87,7 @@ export default function DashboardPage() {
 
       try {
         // ① 全体統計を取得
-        const all = await getAllStats();
+        const allStats = await getAllStatsWithCategories();
 
         // ② 講師リスト Supabase から取得
         const teachers = (await getTeachers()) as { id: string; name: string }[];
@@ -100,35 +102,32 @@ export default function DashboardPage() {
 
         const { data: dayRows } = await supabase
           .from('stats_all_day')
-          .select('key_date,total_cnt')
+          .select('key_date,total_cnt,category')
           .gte('key_date', firstISO)
           .lte('key_date', lastISO);
 
         // ④ 講師別統計を並列取得
         const teacherStatsPromises = teachers.map(async (t: { id: string; name: string }) => {
           try {
-            const s = await getTeacherStats(t.id);
+            const s = await getTeacherStatsWithCategories(t.id);
             return {
               id: t.id,
               name: t.name,
-              dailyCount: s?.day_total ?? 0,
-              monthlyCount: s?.month_total ?? 0,
-              yearlyCount: s?.year_total ?? 0,
-              avgMinutes:
-                s?.avg_minutes ??
-                (s && s.day_total > 0 && (s.total_minutes ?? 0) > 0
-                  ? Math.round(((s.total_minutes as number) / s.day_total) * 10) / 10
-                  : 0),
+              teacher: s.teacher,
+              entry: s.entry,
+              avgMinutes: s.avgMinutes
             } as TeacherStatsType;
           } catch (e) {
             // データが無い場合など
             return {
               id: t.id,
               name: t.name,
-              dailyCount: 0,
-              monthlyCount: 0,
-              yearlyCount: 0,
-              avgMinutes: 0,
+              teacher: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+              entry: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+              avgMinutes: {
+                teacher: { daily: 0, monthly: 0, yearly: 0, total: 0 },
+                entry: { daily: 0, monthly: 0, yearly: 0, total: 0 }
+              }
             } as TeacherStatsType;
           }
         });
@@ -141,28 +140,22 @@ export default function DashboardPage() {
           currentDate.getMonth()
         );
 
-        // dayRows をカレンダーに反映
+        // dayRows をカレンダーに反映（teacher + entry の合計）
         dayRows?.forEach((r) => {
           const d = new Date(r.key_date);
           const idx = calendar.findIndex((c) => c.date === d.getDate());
           if (idx !== -1) {
             calendar[idx] = {
               ...calendar[idx],
-              count: r.total_cnt,
-              hasData: r.total_cnt > 0,
+              count: (calendar[idx].count || 0) + r.total_cnt,
+              hasData: true,
             };
           }
         });
 
         const data: MeetingData = {
-          totalDaily: all?.day_total ?? 0,
-          totalMonthly: all?.month_total ?? 0,
-          totalYearly: all?.year_total ?? 0,
-          avgMinutes:
-            all?.avg_minutes ??
-            (all && all.day_total > 0 && (all.total_minutes ?? 0) > 0
-              ? Math.round(((all.total_minutes as number) / all.day_total) * 10) / 10
-              : 0),
+          teacher: allStats.teacher,
+          entry: allStats.entry,
           calendarData: calendar,
           teacherStats,
         };
@@ -221,9 +214,12 @@ export default function DashboardPage() {
     }
   };
 
-  const updateTotalStats = (field: keyof MeetingData, value: number) => {
+  const updateTotalStats = (category: 'teacher' | 'entry', field: keyof CategoryStats, value: number) => {
     if (!meetingData) return;
-    setMeetingData({ ...meetingData, [field]: value });
+    setMeetingData({ 
+      ...meetingData, 
+      [category]: { ...meetingData[category], [field]: value }
+    });
     setHasUnsavedChanges(true);
   };
 
@@ -237,12 +233,16 @@ export default function DashboardPage() {
 
   const updateTeacherStats = (
     teacherId: string,
-    field: keyof TeacherStatsType,
+    category: 'teacher' | 'entry',
+    field: keyof CategoryStats,
     value: number
   ) => {
     if (!meetingData) return;
     const updated = meetingData.teacherStats.map((t) =>
-      t.id === teacherId ? { ...t, [field]: value } : t
+      t.id === teacherId ? { 
+        ...t, 
+        [category]: { ...t[category], [field]: value }
+      } : t
     );
     setMeetingData({ ...meetingData, teacherStats: updated });
     setHasUnsavedChanges(true);
@@ -292,7 +292,6 @@ export default function DashboardPage() {
           const r: any = payload.new;
           // r.key_date は YYYY-MM-DD
           const d = new Date(r.key_date);
-          updateTotalStats('totalDaily', r.total_cnt);
           // 月・年は別トリガーで更新されるので fetchData で再取得
           if (
             d.getFullYear() === currentDate.getFullYear() &&
@@ -308,11 +307,7 @@ export default function DashboardPage() {
         { event: 'UPDATE', schema: 'public', table: 'stats_teacher_day' },
         (payload) => {
           const r: any = payload.new;
-          updateTeacherStats(r.email, 'dailyCount', r.day_total);
-          updateTeacherStats(r.email, 'monthlyCount', r.month_total);
-          updateTeacherStats(r.email, 'yearlyCount', r.year_total);
-          const avg = r.day_total > 0 ? Math.round((r.total_minutes / r.day_total) * 10) / 10 : 0;
-          updateTeacherStats(r.email, 'avgMinutes', avg);
+          // TODO: category に応じて更新
         }
       )
       .subscribe();
@@ -379,6 +374,16 @@ export default function DashboardPage() {
           </button>
           <button
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              selectedTab === "average"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            }`}
+            onClick={() => setSelectedTab("average")}
+          >
+            平均時間
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               selectedTab === "spreadsheet"
                 ? "bg-blue-600 text-white"
                 : "bg-white text-gray-700 hover:bg-gray-100"
@@ -403,6 +408,11 @@ export default function DashboardPage() {
               onUpdateTeacher={updateTeacherStats}
               onAddTeacher={addTeacher}
               onDeleteTeacher={deleteTeacher}
+            />
+          ) : selectedTab === "average" ? (
+            <AverageTimeTab
+              meetingData={meetingData}
+              currentDate={currentDate}
             />
           ) : (
             <div className="w-full overflow-auto">

@@ -4,20 +4,27 @@ export interface DayData {
     hasData: boolean;
   }
   
+  export interface CategoryStats {
+    daily: number;    // 本日
+    monthly: number;  // 今月
+    yearly: number;   // 今年
+    total: number;    // 累計（全期間）
+  }
+  
   export interface TeacherStats {
     id: string;
     name: string;
-    dailyCount: number;
-    monthlyCount: number;
-    yearlyCount: number;
-    avgMinutes: number;
+    teacher: CategoryStats;  // 講師面談
+    entry: CategoryStats;    // 受講開始面談
+    avgMinutes: {
+      teacher: CategoryStats;  // 講師面談の平均時間
+      entry: CategoryStats;    // 受講開始面談の平均時間
+    };
   }
   
   export interface MeetingData {
-    totalDaily: number;
-    totalMonthly: number;
-    totalYearly: number;
-    avgMinutes: number;
+    teacher: CategoryStats;   // 講師面談
+    entry: CategoryStats;     // 受講開始面談
     calendarData: DayData[];
     teacherStats: TeacherStats[];
   }
@@ -41,4 +48,4 @@ export interface DayData {
     hasData: boolean;
   }
   
-  export type TabType = 'month' | 'teacher' | 'spreadsheet';
+  export type TabType = 'month' | 'teacher' | 'average' | 'spreadsheet';

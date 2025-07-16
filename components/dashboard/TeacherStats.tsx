@@ -3,16 +3,35 @@
 import React, { useState } from 'react';
 import { Users, Plus, Trash2, BarChart2 } from 'lucide-react';
 import EditableCell from './EditableCell';
-import { TeacherStats as TeacherStatsType, MeetingData } from '@/types/dashboard';
+import { TeacherStats as TeacherStatsType, CategoryStats } from '@/types/dashboard';
 import AddTeacherModal from './AddTeacherModal';
 import DeleteTeacherModal from './DeleteTeacherModal';
 
 interface TeacherStatsProps {
   teacherStats: TeacherStatsType[];
-  onUpdateTeacher: (teacherId: string, field: keyof TeacherStatsType, value: number) => void;
+  onUpdateTeacher: (teacherId: string, category: 'teacher' | 'entry', field: keyof CategoryStats, value: number) => void;
   onAddTeacher: (teacher: TeacherStatsType) => void;
   onDeleteTeacher: (teacherId: string) => void;
 }
+
+const TeacherMetricCard = ({ 
+  label, 
+  value, 
+  color, 
+  onUpdate 
+}: { 
+  label: string; 
+  value: number; 
+  color: string; 
+  onUpdate: (v: number) => void; 
+}) => (
+  <div className="bg-gray-50 rounded p-2 text-center">
+    <div className={`text-lg ${color}`}>
+      <EditableCell value={value} onSave={onUpdate} />
+    </div>
+    <div className="text-xs text-gray-600">{label}</div>
+  </div>
+);
 
 export default function TeacherStats({ 
   teacherStats, 
@@ -69,42 +88,67 @@ export default function TeacherStats({
               </div>
             </div>
             
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div className="bg-gray-50 rounded p-3">
-                <div className="text-2xl text-blue-600">
-                  <EditableCell
-                    value={teacher.dailyCount}
-                    onSave={(v) => onUpdateTeacher(teacher.id, 'dailyCount', v)}
+            <div className="space-y-3">
+              {/* 講師面談 */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">講師面談</h4>
+                <div className="grid grid-cols-4 gap-2">
+                  <TeacherMetricCard 
+                    label="本日" 
+                    value={teacher.teacher.daily} 
+                    color="text-blue-600"
+                    onUpdate={(v) => onUpdateTeacher(teacher.id, 'teacher', 'daily', v)}
+                  />
+                  <TeacherMetricCard 
+                    label="今月" 
+                    value={teacher.teacher.monthly} 
+                    color="text-green-600"
+                    onUpdate={(v) => onUpdateTeacher(teacher.id, 'teacher', 'monthly', v)}
+                  />
+                  <TeacherMetricCard 
+                    label="今年" 
+                    value={teacher.teacher.yearly} 
+                    color="text-purple-600"
+                    onUpdate={(v) => onUpdateTeacher(teacher.id, 'teacher', 'yearly', v)}
+                  />
+                  <TeacherMetricCard 
+                    label="累計" 
+                    value={teacher.teacher.total} 
+                    color="text-orange-600"
+                    onUpdate={(v) => onUpdateTeacher(teacher.id, 'teacher', 'total', v)}
                   />
                 </div>
-                <div className="text-xs text-gray-600">本日</div>
               </div>
-              <div className="bg-gray-50 rounded p-3">
-                <div className="text-2xl text-green-600">
-                  <EditableCell
-                    value={teacher.monthlyCount}
-                    onSave={(v) => onUpdateTeacher(teacher.id, 'monthlyCount', v)}
+
+              {/* 受講開始面談 */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">受講開始面談</h4>
+                <div className="grid grid-cols-4 gap-2">
+                  <TeacherMetricCard 
+                    label="本日" 
+                    value={teacher.entry.daily} 
+                    color="text-blue-600"
+                    onUpdate={(v) => onUpdateTeacher(teacher.id, 'entry', 'daily', v)}
+                  />
+                  <TeacherMetricCard 
+                    label="今月" 
+                    value={teacher.entry.monthly} 
+                    color="text-green-600"
+                    onUpdate={(v) => onUpdateTeacher(teacher.id, 'entry', 'monthly', v)}
+                  />
+                  <TeacherMetricCard 
+                    label="今年" 
+                    value={teacher.entry.yearly} 
+                    color="text-purple-600"
+                    onUpdate={(v) => onUpdateTeacher(teacher.id, 'entry', 'yearly', v)}
+                  />
+                  <TeacherMetricCard 
+                    label="累計" 
+                    value={teacher.entry.total} 
+                    color="text-orange-600"
+                    onUpdate={(v) => onUpdateTeacher(teacher.id, 'entry', 'total', v)}
                   />
                 </div>
-                <div className="text-xs text-gray-600">今月</div>
-              </div>
-              <div className="bg-gray-50 rounded p-3">
-                <div className="text-2xl text-purple-600">
-                  <EditableCell
-                    value={teacher.yearlyCount}
-                    onSave={(v) => onUpdateTeacher(teacher.id, 'yearlyCount', v)}
-                  />
-                </div>
-                <div className="text-xs text-gray-600">今年</div>
-              </div>
-              <div className="bg-gray-50 rounded p-3">
-                <div className="text-2xl text-orange-600">
-                  <EditableCell
-                    value={teacher.avgMinutes}
-                    onSave={(v) => onUpdateTeacher(teacher.id, 'avgMinutes', v)}
-                  />
-                </div>
-                <div className="text-xs text-gray-600">平均時間 (分)</div>
               </div>
             </div>
           </div>
