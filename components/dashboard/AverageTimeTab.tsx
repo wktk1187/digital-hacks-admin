@@ -18,11 +18,11 @@ const AvgTimeCard = ({
   avgMinutes: number; 
   color: string; 
 }) => (
-  <div className="bg-white rounded-lg border p-6">
-    <h3 className={`text-lg font-semibold mb-3 ${color}`}>{title}</h3>
+  <div className="bg-white rounded-lg border p-3">
+    <h3 className={`text-sm font-medium mb-2 ${color}`}>{title}</h3>
     <div className="text-center">
-      <div className="text-3xl font-bold text-gray-800">{avgMinutes}</div>
-      <div className="text-sm text-gray-600">分</div>
+      <div className="text-xl font-bold text-gray-800">{avgMinutes}</div>
+      <div className="text-xs text-gray-600">分</div>
     </div>
   </div>
 );
@@ -47,10 +47,10 @@ export default function AverageTimeTab({ meetingData, currentDate }: AverageTime
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold flex items-center">
-          <Clock className="w-6 h-6 mr-2" />
+        <h2 className="text-lg font-bold flex items-center">
+          <Clock className="w-5 h-5 mr-2" />
           平均面談時間 (分)
         </h2>
         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -59,9 +59,9 @@ export default function AverageTimeTab({ meetingData, currentDate }: AverageTime
       </div>
 
       {/* 全体平均 */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">全体平均</h3>
-        <div className="max-w-md mx-auto">
+      <div className="bg-gray-50 rounded-lg p-3">
+        <h3 className="text-sm font-medium text-gray-700 mb-2">全体平均</h3>
+        <div className="w-48">
           <AvgTimeCard 
             title="全面談（累計）" 
             avgMinutes={calculateOverallAverage()}
@@ -72,11 +72,11 @@ export default function AverageTimeTab({ meetingData, currentDate }: AverageTime
 
       {/* 講師別平均 */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
-          <Users className="w-5 h-5 mr-2" />
+        <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+          <Users className="w-4 h-4 mr-1" />
           講師別平均
         </h3>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {meetingData.teacherStats.map((teacher, index) => {
             // 講師ごとの全面談平均時間を計算
             const teacherTotalMinutes = (teacher.avgMinutes.teacher.total * teacher.teacher.total) + 
@@ -86,21 +86,19 @@ export default function AverageTimeTab({ meetingData, currentDate }: AverageTime
               Math.round((teacherTotalMinutes / teacherTotalCount) * 10) / 10 : 0;
 
             return (
-              <div key={teacher.id} className="bg-white rounded-lg border p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+              <div key={teacher.id} className="bg-white rounded-lg border p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
                     {index + 1}
                   </div>
-                  <h4 className="font-medium text-lg">{teacher.name}</h4>
+                  <h4 className="font-medium text-sm">{teacher.name}</h4>
                 </div>
                 
-                <div className="max-w-md mx-auto">
-                  <AvgTimeCard 
-                    title="全面談（累計）" 
-                    avgMinutes={teacherOverallAvg}
-                    color="text-purple-600"
-                  />
-                </div>
+                <AvgTimeCard 
+                  title="全面談（累計）" 
+                  avgMinutes={teacherOverallAvg}
+                  color="text-purple-600"
+                />
               </div>
             );
           })}
