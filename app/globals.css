@@ -1,3 +1,5 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* カスタム共通スタイルがあればここに追加 */ 
