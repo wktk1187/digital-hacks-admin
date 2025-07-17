@@ -149,16 +149,6 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
     return teacher ? teacher.name : organizerEmail;
   };
 
-  // 日付範囲のクイック選択
-  const setDateRange = (days: number) => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - days);
-    
-    setEndDate(end.toISOString().split('T')[0]);
-    setStartDate(start.toISOString().split('T')[0]);
-  };
-
   const getCategoryColor = (category: string) => {
     return category === '講師面談' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
   };
@@ -257,31 +247,6 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
 
       {/* フィルター */}
       <div className="bg-white rounded-lg border p-6 space-y-6">
-        {/* 日付範囲クイック選択 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">期間選択</label>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <button
-              onClick={() => setDateRange(7)}
-              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            >
-              過去7日
-            </button>
-            <button
-              onClick={() => setDateRange(30)}
-              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            >
-              過去30日
-            </button>
-            <button
-              onClick={() => setDateRange(90)}
-              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            >
-              過去90日
-            </button>
-          </div>
-        </div>
-
         {/* 詳細フィルター */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* 開始日 */}
