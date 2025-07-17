@@ -65,6 +65,7 @@ export async function GET(req: NextRequest) {
       startTime: meeting.start_time,
       endTime: meeting.end_time,
       duration: meeting.duration_minutes,
+      actualDuration: meeting.actual_duration_minutes,
       date: new Date(meeting.start_time).toLocaleDateString('ja-JP'),
       time: new Date(meeting.start_time).toLocaleTimeString('ja-JP', { 
         hour: '2-digit', 

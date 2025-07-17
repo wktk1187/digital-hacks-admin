@@ -39,6 +39,7 @@ export interface DayData {
     startTime: string;
     endTime: string;
     duration: number;
+    actualDuration?: number | null; // 実際の面談時間（分）
     date: string;
     time: string;
     description: string;

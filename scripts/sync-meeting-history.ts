@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
+import { estimateActualMeetingDuration } from '../lib/driveUtils';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -144,6 +145,17 @@ async function getCalendarEvents(startDate: Date, endDate: Date) {
 async function saveMeetingToDatabase(event: any) {
   const attachments = getAttachmentUrls(event);
   const attendeeInfo = getAttendeeInfo(event);
+  const scheduledDuration = calculateDuration(event.start.dateTime, event.end.dateTime);
+  
+  // 実際の面談時間を取得（動画ファイルがある場合）
+  let actualDuration = null;
+  if (attachments.videos.length > 0) {
+    try {
+      actualDuration = await estimateActualMeetingDuration(attachments.videos, scheduledDuration);
+    } catch (error) {
+      console.log(`⚠️  実際の面談時間取得エラー (${event.summary}):`, error instanceof Error ? error.message : String(error));
+    }
+  }
   
   const meetingData = {
     calendar_event_id: event.id,
@@ -154,7 +166,8 @@ async function saveMeetingToDatabase(event: any) {
     attendee_email: attendeeInfo.email,
     start_time: event.start.dateTime,
     end_time: event.end.dateTime,
-    duration_minutes: calculateDuration(event.start.dateTime, event.end.dateTime),
+    duration_minutes: scheduledDuration,
+    actual_duration_minutes: actualDuration,
     description: event.description || '',
     location: event.location || '',
     document_urls: attachments.documents,
@@ -240,7 +253,7 @@ async function updateMeetingStats(startDate: Date, endDate: Date) {
     // meeting_historyテーブルからデータを取得して統計を更新
     const { data: meetings, error: fetchError } = await supabaseAdmin
       .from('meeting_history')
-      .select('organizer_email, category, start_time, duration_minutes')
+      .select('organizer_email, category, start_time, duration_minutes, actual_duration_minutes')
       .gte('start_time', startDate.toISOString())
       .lte('start_time', endDate.toISOString());
 
@@ -270,11 +283,14 @@ async function updateMeetingStats(startDate: Date, endDate: Date) {
           day: '2-digit',
         }).replace(/年|月/g, '/').replace('日', '');
 
+        // 実際の面談時間があれば優先、なければ予定時間を使用
+        const actualDuration = meeting.actual_duration_minutes || meeting.duration_minutes;
+        
         const { error } = await supabaseAdmin.rpc('update_meeting_stats', {
           p_email: meeting.organizer_email,
           p_category: meeting.category,
           p_date_str: dateStr,
-          p_duration_minutes: meeting.duration_minutes,
+          p_duration_minutes: actualDuration,
           p_delta_count: 1,
         });
 

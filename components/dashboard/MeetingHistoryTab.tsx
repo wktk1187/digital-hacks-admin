@@ -12,7 +12,8 @@ import {
   Video, 
   ExternalLink,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { MeetingHistoryItem, MeetingHistoryResponse } from '@/types/dashboard';
 
@@ -58,8 +59,6 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
     { email: 's.kasugai@digital-hacks.com', name: '春日井爽太' },
     { email: 'r.arai@digital-hacks.com', name: '新井玲央奈' }
   ];
-  
-
 
   // 初期日付設定（過去30日間）
   useEffect(() => {
@@ -69,6 +68,24 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
     
     setEndDate(end.toISOString().split('T')[0]);
     setStartDate(start.toISOString().split('T')[0]);
+  }, []);
+
+  // 外部クリックでドロップダウンを閉じる（ヘッダーセクション用）
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // ヘッダーのドロップダウンメニューがある場合の処理
+      const dropdownMenus = document.querySelectorAll('.dropdown-menu');
+      dropdownMenus.forEach(menu => {
+        if (!menu.contains(target) && !target.closest('.dropdown-trigger')) {
+          menu.classList.add('hidden');
+        }
+      });
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   // データ取得
@@ -120,7 +137,27 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
     fetchMeetingHistory(page);
   };
 
+  // 講師フィルタークリア
+  const clearTeacherFilter = () => {
+    setOrganizerEmail('');
+  };
 
+  // 選択された講師の名前を取得
+  const getSelectedTeacherName = () => {
+    if (!organizerEmail) return '';
+    const teacher = teachers.find(t => t.email === organizerEmail);
+    return teacher ? teacher.name : organizerEmail;
+  };
+
+  // 日付範囲のクイック選択
+  const setDateRange = (days: number) => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - days);
+    
+    setEndDate(end.toISOString().split('T')[0]);
+    setStartDate(start.toISOString().split('T')[0]);
+  };
 
   const getCategoryColor = (category: string) => {
     return category === '講師面談' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
@@ -219,38 +256,69 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
       </div>
 
       {/* フィルター */}
-      <div className="bg-white rounded-lg border p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="bg-white rounded-lg border p-6 space-y-6">
+        {/* 日付範囲クイック選択 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">期間選択</label>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => setDateRange(7)}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              過去7日
+            </button>
+            <button
+              onClick={() => setDateRange(30)}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              過去30日
+            </button>
+            <button
+              onClick={() => setDateRange(90)}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              過去90日
+            </button>
+          </div>
+        </div>
+
+        {/* 詳細フィルター */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* 開始日 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">開始日</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-2">開始日</label>
+            <div className="relative">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <Calendar className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
           </div>
 
           {/* 終了日 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">終了日</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-2">終了日</label>
+            <div className="relative">
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <Calendar className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
           </div>
 
           {/* カテゴリフィルター */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリ</label>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value as any)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
-              style={{ backgroundPosition: 'right 0.5rem center' }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none bg-white"
             >
               <option value="all">すべて</option>
               <option value="teacher">講師面談</option>
@@ -260,12 +328,11 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
 
           {/* 講師選択 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">講師</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">講師</label>
             <select
               value={organizerEmail}
               onChange={(e) => setOrganizerEmail(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
-              style={{ backgroundPosition: 'right 0.5rem center' }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none bg-white"
             >
               <option value="">すべての講師</option>
               {teachers.map((teacher) => (
@@ -276,6 +343,35 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
             </select>
           </div>
         </div>
+
+        {/* アクティブフィルター表示 */}
+        {(organizerEmail || categoryFilter !== 'all') && (
+          <div className="flex flex-wrap gap-2 pt-2 border-t">
+            <span className="text-sm text-gray-600">アクティブフィルター:</span>
+            {organizerEmail && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                講師: {getSelectedTeacherName()}
+                <button
+                  onClick={clearTeacherFilter}
+                  className="ml-1 hover:text-blue-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {categoryFilter !== 'all' && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                カテゴリ: {categoryFilter === 'teacher' ? '講師面談' : '受講開始面談'}
+                <button
+                  onClick={() => setCategoryFilter('all')}
+                  className="ml-1 hover:text-green-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 履歴テーブル */}
@@ -315,6 +411,9 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
                       日時
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      面談時間
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       ドキュメント
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -348,6 +447,20 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
                           <div className="flex items-center mt-1">
                             <Clock className="w-4 h-4 mr-1 text-gray-400" />
                             <span className="text-xs text-gray-500">{meeting.time}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center">
+                              <Clock className="w-4 h-4 mr-1 text-gray-400" />
+                              <span className="text-sm text-gray-600">予定: {meeting.duration}分</span>
+                            </div>
+                            {meeting.actualDuration && (
+                              <div className="flex items-center">
+                                <Video className="w-4 h-4 mr-1 text-green-600" />
+                                <span className="text-sm font-medium text-green-700">実際: {meeting.actualDuration}分</span>
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -395,7 +508,6 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
                           </div>
                         </td>
                       </tr>
-
                     </React.Fragment>
                   ))}
                 </tbody>
