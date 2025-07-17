@@ -249,7 +249,8 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value as any)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+              style={{ backgroundPosition: 'right 0.5rem center' }}
             >
               <option value="all">すべて</option>
               <option value="teacher">講師面談</option>
@@ -263,7 +264,8 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
             <select
               value={organizerEmail}
               onChange={(e) => setOrganizerEmail(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+              style={{ backgroundPosition: 'right 0.5rem center' }}
             >
               <option value="">すべての講師</option>
               {teachers.map((teacher) => (
