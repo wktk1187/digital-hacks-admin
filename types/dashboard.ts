@@ -82,4 +82,4 @@ export interface DayData {
     hasData: boolean;
   }
   
-  export type TabType = 'month' | 'teacher' | 'average' | 'history' | 'googleCalendar' | 'spreadsheet';
+  export type TabType = 'month' | 'teacher' | 'average' | 'history' | 'spreadsheet';
