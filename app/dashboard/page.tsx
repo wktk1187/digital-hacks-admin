@@ -10,6 +10,7 @@ import TeacherStats from "@/components/dashboard/TeacherStats";
 import LoginForm from "@/components/auth/LoginForm";
 import AverageTimeTab from "@/components/dashboard/AverageTimeTab";
 import MeetingHistoryTab from "@/components/dashboard/MeetingHistoryTab";
+import GoogleCalendarTab from "@/components/dashboard/GoogleCalendarTab";
 import {
   MeetingData,
   SettingsData,
@@ -406,6 +407,16 @@ export default function DashboardPage() {
           </button>
           <button
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              selectedTab === "googleCalendar"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            }`}
+            onClick={() => setSelectedTab("googleCalendar")}
+          >
+            Googleカレンダー
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               selectedTab === "spreadsheet"
                 ? "bg-blue-600 text-white"
                 : "bg-white text-gray-700 hover:bg-gray-100"
@@ -440,6 +451,8 @@ export default function DashboardPage() {
             <MeetingHistoryTab
               currentDate={currentDate}
             />
+          ) : selectedTab === "googleCalendar" ? (
+            <GoogleCalendarTab />
           ) : (
             <div className="w-full overflow-auto">
               {/* 検索フォーム */}
