@@ -4,10 +4,6 @@ import React from 'react';
 import { Calendar } from 'lucide-react';
 
 export default function GoogleCalendarTab() {
-  // GoogleカレンダーのURL（埋め込み用）
-  // 実際のカレンダーIDに置き換える必要があります
-  const calendarEmbedUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent('info@digital-hacks.com')}&ctz=Asia%2FTokyo&mode=MONTH&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0&showTz=0&height=600&wkst=1`;
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -29,12 +25,12 @@ export default function GoogleCalendarTab() {
 
       {/* カレンダー埋め込み */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <iframe
-          src={calendarEmbedUrl}
-          style={{ border: 0 }}
-          width="100%"
-          height="600"
-          frameBorder="0"
+        <iframe 
+          src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=Asia%2FTokyo&showPrint=0&src=aW5mb0BkaWdpdGFsLWhhY2tzLmNvbQ&color=%23039be5" 
+          style={{ border: "solid 1px #777" }} 
+          width="100%" 
+          height="600" 
+          frameBorder="0" 
           scrolling="no"
           title="Google Calendar"
           className="w-full"
