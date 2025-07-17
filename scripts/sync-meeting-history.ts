@@ -204,7 +204,7 @@ export async function bulkHistorySync(startDateStr: string, endDateStr: string) 
 }
 
 // CLI実行時の処理
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
   const command = args[0];
   
