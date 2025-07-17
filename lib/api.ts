@@ -121,11 +121,19 @@ export const getTeacherStatsWithCategories = async (email: string) => {
 export const getMeetingHistory = async (params?: {
   startDate?: string;
   endDate?: string;
+  organizerEmail?: string;
+  attendeeName?: string;
+  category?: string;
+  page?: number;
   limit?: number;
 }) => {
   const searchParams = new URLSearchParams();
   if (params?.startDate) searchParams.append('startDate', params.startDate);
   if (params?.endDate) searchParams.append('endDate', params.endDate);
+  if (params?.organizerEmail) searchParams.append('organizerEmail', params.organizerEmail);
+  if (params?.attendeeName) searchParams.append('attendeeName', params.attendeeName);
+  if (params?.category) searchParams.append('category', params.category);
+  if (params?.page) searchParams.append('page', params.page.toString());
   if (params?.limit) searchParams.append('limit', params.limit.toString());
   
   const res = await fetch(`/api/meeting-history?${searchParams}`);
