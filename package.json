@@ -12,7 +12,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "sync-gcal": "tsx scripts/sync-gcal-to-stats.ts"
+    "sync-gcal": "tsx scripts/sync-gcal-to-stats.ts",
+    "sync-history": "tsx scripts/sync-meeting-history.ts"
   },
   "keywords": [],
   "author": "",

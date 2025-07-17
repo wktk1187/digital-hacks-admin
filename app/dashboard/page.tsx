@@ -9,6 +9,7 @@ import MonthlyCalendar from "@/components/dashboard/MonthlyCalendar";
 import TeacherStats from "@/components/dashboard/TeacherStats";
 import LoginForm from "@/components/auth/LoginForm";
 import AverageTimeTab from "@/components/dashboard/AverageTimeTab";
+import MeetingHistoryTab from "@/components/dashboard/MeetingHistoryTab";
 import {
   MeetingData,
   SettingsData,
@@ -395,6 +396,16 @@ export default function DashboardPage() {
           </button>
           <button
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              selectedTab === "history"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            }`}
+            onClick={() => setSelectedTab("history")}
+          >
+            面談履歴
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               selectedTab === "spreadsheet"
                 ? "bg-blue-600 text-white"
                 : "bg-white text-gray-700 hover:bg-gray-100"
@@ -423,6 +434,10 @@ export default function DashboardPage() {
           ) : selectedTab === "average" ? (
             <AverageTimeTab
               meetingData={meetingData}
+              currentDate={currentDate}
+            />
+          ) : selectedTab === "history" ? (
+            <MeetingHistoryTab
               currentDate={currentDate}
             />
           ) : (

@@ -115,4 +115,19 @@ export const getTeacherStatsWithCategories = async (email: string) => {
       }
     }
   };
+};
+
+// 面談履歴を取得
+export const getMeetingHistory = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.startDate) searchParams.append('startDate', params.startDate);
+  if (params?.endDate) searchParams.append('endDate', params.endDate);
+  if (params?.limit) searchParams.append('limit', params.limit.toString());
+  
+  const res = await fetch(`/api/meeting-history?${searchParams}`);
+  return res.json();
 }; 

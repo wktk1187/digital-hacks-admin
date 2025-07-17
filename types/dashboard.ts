@@ -28,6 +28,40 @@ export interface DayData {
     calendarData: DayData[];
     teacherStats: TeacherStats[];
   }
+
+  export interface MeetingHistoryItem {
+    id: string;
+    title: string;
+    category: '講師面談' | '受講開始面談';
+    organizerEmail: string;
+    attendeeName: string;
+    attendeeEmail: string;
+    startTime: string;
+    endTime: string;
+    duration: number;
+    date: string;
+    time: string;
+    description: string;
+    location: string;
+    documentUrls: string[];
+    videoUrls: string[];
+    meetLink: string;
+    calendarEventUrl: string;
+  }
+
+  export interface MeetingHistoryResponse {
+    success: boolean;
+    data: MeetingHistoryItem[];
+    message?: string;
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
+  }
   
   export interface UserData {
     name: string;
@@ -48,4 +82,4 @@ export interface DayData {
     hasData: boolean;
   }
   
-  export type TabType = 'month' | 'teacher' | 'average' | 'spreadsheet';
+  export type TabType = 'month' | 'teacher' | 'average' | 'history' | 'spreadsheet';
