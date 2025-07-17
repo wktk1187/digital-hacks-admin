@@ -1,20 +1,35 @@
 import { google } from 'googleapis';
-import { supabaseAdmin } from '../lib/supabaseAdmin';
+import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+
+// 環境変数を読み込み
+dotenv.config();
+
+// Supabase設定
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables');
+}
+
+const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
 // Google Calendar API設定
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
-const CALENDAR_ID = process.env.GCAL_CALENDAR_ID || '';
+const CALENDAR_ID = process.env.GCAL_CALENDAR_ID;
+
+if (!CALENDAR_ID) {
+  throw new Error('GCAL_CALENDAR_ID must be set in environment variables');
+}
 
 // サービスアカウント認証
 function getGoogleAuth() {
-  const serviceAccountJson = process.env.GCAL_SERVICE_ACCOUNT_JSON;
-  if (!serviceAccountJson) {
-    throw new Error('GCAL_SERVICE_ACCOUNT_JSON environment variable is not set');
-  }
+  const serviceAccountPath = process.env.GCAL_SERVICE_ACCOUNT_PATH || './google-service-account.json';
+  console.log('Using service account path:', serviceAccountPath);
   
-  const credentials = JSON.parse(serviceAccountJson);
   const auth = new google.auth.GoogleAuth({
-    credentials,
+    keyFile: serviceAccountPath,
     scopes: SCOPES,
   });
   
@@ -81,21 +96,48 @@ function calculateDuration(startTime: string, endTime: string): number {
   return Math.round((end.getTime() - start.getTime()) / (1000 * 60));
 }
 
-// Google Calendarからイベントを取得
+// Google Calendarからイベントを取得（ページネーション対応）
 async function getCalendarEvents(startDate: Date, endDate: Date) {
   const auth = getGoogleAuth();
   const calendar = google.calendar({ version: 'v3', auth });
   
-  const response = await calendar.events.list({
-    calendarId: CALENDAR_ID,
-    timeMin: startDate.toISOString(),
-    timeMax: endDate.toISOString(),
-    maxResults: 500,
-    singleEvents: true,
-    orderBy: 'startTime',
-  });
+  console.log('API Request Parameters:');
+  console.log('- calendarId:', CALENDAR_ID);
+  console.log('- timeMin:', startDate.toISOString());
+  console.log('- timeMax:', endDate.toISOString());
   
-  return response.data.items || [];
+  let allEvents: any[] = [];
+  let pageToken: string | undefined = undefined;
+  
+  do {
+    const response: any = await calendar.events.list({
+      calendarId: CALENDAR_ID,
+      timeMin: startDate.toISOString(),
+      timeMax: endDate.toISOString(),
+      maxResults: 2500, // 最大値に設定
+      singleEvents: true,
+      orderBy: 'startTime',
+      pageToken: pageToken,
+    });
+    
+    console.log('API Response Status:', response.status);
+    console.log('API Response Data Keys:', Object.keys(response.data));
+    console.log('Items array length:', response.data.items ? response.data.items.length : 'undefined');
+    console.log('Raw items:', JSON.stringify(response.data.items, null, 2));
+    console.log('Summary:', response.data.summary);
+    console.log('AccessRole:', response.data.accessRole);
+    console.log('TimeZone:', response.data.timeZone);
+    
+    const events = response.data.items || [];
+    allEvents = allEvents.concat(events);
+    pageToken = response.data.nextPageToken;
+    
+    console.log(`取得済み: ${allEvents.length}件, nextPageToken: ${pageToken ? 'あり' : 'なし'}`);
+    
+  } while (pageToken);
+  
+  console.log(`総イベント数: ${allEvents.length}件`);
+  return allEvents;
 }
 
 // 面談データをSupabaseに保存
@@ -143,7 +185,9 @@ async function saveMeetingToDatabase(event: any) {
 
 // メイン同期処理
 async function syncMeetingHistory(startDate: Date, endDate: Date) {
-  console.log(`Syncing meeting history from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+  console.log(`=== Syncing meeting history from ${startDate.toISOString()} to ${endDate.toISOString()} ===`);
+  console.log('Calendar ID:', CALENDAR_ID);
+  console.log('Environment check - GCAL_SERVICE_ACCOUNT_JSON:', process.env.GCAL_SERVICE_ACCOUNT_JSON ? 'SET' : 'NOT SET');
   
   try {
     const events = await getCalendarEvents(startDate, endDate);
@@ -173,6 +217,13 @@ async function syncMeetingHistory(startDate: Date, endDate: Date) {
     }
     
     console.log(`Sync completed: ${successCount} success, ${errorCount} errors`);
+    
+    // 統計テーブルを更新
+    if (successCount > 0) {
+      console.log('Updating meeting statistics...');
+      await updateMeetingStats(startDate, endDate);
+    }
+    
     return { successCount, errorCount, totalEvents: events.length };
     
   } catch (error) {
@@ -181,32 +232,106 @@ async function syncMeetingHistory(startDate: Date, endDate: Date) {
   }
 }
 
+// 統計テーブルを更新
+async function updateMeetingStats(startDate: Date, endDate: Date) {
+  try {
+    console.log('Updating meeting statistics from meeting_history table...');
+    
+    // meeting_historyテーブルからデータを取得して統計を更新
+    const { data: meetings, error: fetchError } = await supabaseAdmin
+      .from('meeting_history')
+      .select('organizer_email, category, start_time, duration_minutes')
+      .gte('start_time', startDate.toISOString())
+      .lte('start_time', endDate.toISOString());
+
+    if (fetchError) {
+      console.error('Error fetching meeting history:', fetchError);
+      return false;
+    }
+
+    if (!meetings || meetings.length === 0) {
+      console.log('No meetings found in the specified date range');
+      return true;
+    }
+
+    console.log(`Processing ${meetings.length} meetings for statistics...`);
+
+    // 各ミーティングを統計に追加
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const meeting of meetings) {
+      try {
+        // start_timeから日付文字列を作成（YYYY/MM/DD形式）
+        const meetingDate = new Date(meeting.start_time);
+        const dateStr = meetingDate.toLocaleDateString('ja-JP', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).replace(/年|月/g, '/').replace('日', '');
+
+        const { error } = await supabaseAdmin.rpc('update_meeting_stats', {
+          p_email: meeting.organizer_email,
+          p_category: meeting.category,
+          p_date_str: dateStr,
+          p_duration_minutes: meeting.duration_minutes,
+          p_delta_count: 1,
+        });
+
+        if (error) {
+          console.error(`Error updating stats for ${meeting.organizer_email}:`, error);
+          errorCount++;
+        } else {
+          successCount++;
+        }
+      } catch (error) {
+        console.error(`Exception updating stats for meeting:`, error);
+        errorCount++;
+      }
+    }
+
+    console.log(`Statistics update completed: ${successCount} success, ${errorCount} errors`);
+    return errorCount === 0;
+  } catch (error) {
+    console.error('Exception updating meeting stats:', error);
+    return false;
+  }
+}
+
 // 日次同期（本日分）
 export async function dailyHistorySync() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // 日本時間の今日の日付を取得
+  const now = new Date();
+  const jstOffset = 9 * 60; // JST = UTC+9
+  const jstNow = new Date(now.getTime() + (jstOffset * 60 * 1000));
   
-  const endDate = new Date(today);
-  endDate.setHours(23, 59, 59, 999);
+  const todayJST = jstNow.toISOString().split('T')[0]; // YYYY-MM-DD形式
+  const startDate = new Date(todayJST + 'T00:00:00+09:00');
+  const endDate = new Date(todayJST + 'T23:59:59+09:00');
   
-  console.log('Starting daily meeting history sync for:', today.toLocaleDateString());
-  return await syncMeetingHistory(today, endDate);
+  console.log('Starting daily meeting history sync for JST:', todayJST);
+  console.log(`UTC range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+  return await syncMeetingHistory(startDate, endDate);
 }
 
 // 一括同期（指定期間）
 export async function bulkHistorySync(startDateStr: string, endDateStr: string) {
-  const startDate = new Date(startDateStr);
-  const endDate = new Date(endDateStr);
-  endDate.setHours(23, 59, 59, 999);
+  // 日本時間（JST）でDateオブジェクトを作成
+  const startDate = new Date(startDateStr + 'T00:00:00+09:00');
+  const endDate = new Date(endDateStr + 'T23:59:59+09:00');
   
-  console.log(`Starting bulk meeting history sync from ${startDateStr} to ${endDateStr}`);
+  console.log(`Starting bulk meeting history sync from ${startDateStr} to ${endDateStr} (JST)`);
+  console.log(`UTC range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
   return await syncMeetingHistory(startDate, endDate);
 }
 
 // CLI実行時の処理
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMainModule = import.meta.url === `file://${process.argv[1]}` || process.argv[1].endsWith('sync-meeting-history.ts');
+if (isMainModule) {
+  console.log('Script started with args:', process.argv);
   const args = process.argv.slice(2);
   const command = args[0];
+  console.log('Command:', command, 'Args:', args);
   
   if (command === 'daily') {
     dailyHistorySync()
@@ -235,6 +360,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log('Usage:');
     console.log('  npm run sync-history daily           # Sync today\'s meetings');
     console.log('  npm run sync-history bulk YYYY-MM-DD YYYY-MM-DD  # Sync date range');
+    console.log('Current args:', args);
     process.exit(1);
   }
+} else {
+  console.log('Script not executed as main module');
 } 

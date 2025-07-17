@@ -68,7 +68,8 @@ export async function GET(req: NextRequest) {
       date: new Date(meeting.start_time).toLocaleDateString('ja-JP'),
       time: new Date(meeting.start_time).toLocaleTimeString('ja-JP', { 
         hour: '2-digit', 
-        minute: '2-digit' 
+        minute: '2-digit',
+        hour12: false
       }),
       description: meeting.description || '',
       location: meeting.location || '',

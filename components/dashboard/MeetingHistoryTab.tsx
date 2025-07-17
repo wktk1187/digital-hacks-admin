@@ -7,13 +7,10 @@ import {
   Filter, 
   Calendar, 
   Clock, 
-  User, 
   Mail, 
   FileText, 
   Video, 
   ExternalLink,
-  ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -37,10 +34,32 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [organizerEmail, setOrganizerEmail] = useState('');
-  const [attendeeName, setAttendeeName] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'teacher' | 'entry'>('all');
+
+  // 講師リスト
+  const teachers = [
+    { email: 's.hayama@digital-hacks.com', name: '羽山さつき' },
+    { email: 'info@digital-hacks.com', name: 'デジハクサポートチーム' },
+    { email: 'y.hirao@digital-hacks.com', name: '平尾友里香' },
+    { email: 'y.nishimoto@digital-hacks.com', name: '西本吉孝' },
+    { email: 'k.nasu@digital-hacks.com', name: '那須和明' },
+    { email: 'k.sekiguchi@digital-hacks.com', name: '関口幸平' },
+    { email: 'k.morishita@digital-hacks.com', name: '森下幸貴' },
+    { email: 'y.okamoto@digital-hacks.com', name: '岡本庸祐' },
+    { email: 'k.ishisone@digital-hacks.com', name: '石曾根昂平' },
+    { email: 'k.minato@digital-hacks.com', name: '湊昂輔' },
+    { email: 't.iwatani@digital-hacks.com', name: '岩谷毅志' },
+    { email: 'k.yanaidani@digital-hacks.com', name: '柳井谷浩太' },
+    { email: 'm.masuko@digital-hacks.com', name: '増子真也子' },
+    { email: 'm.yamaguchi@digital-hacks.com', name: '山口美紗子' },
+    { email: 'y.mikami@digital-hacks.com', name: '三上裕太' },
+    { email: 't.ueyama@digital-hacks.com', name: '植山透' },
+    { email: 'h.wanita@digital-hacks.com', name: '鰐田鵬文' },
+    { email: 's.kasugai@digital-hacks.com', name: '春日井爽太' },
+    { email: 'r.arai@digital-hacks.com', name: '新井玲央奈' }
+  ];
   
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
 
   // 初期日付設定（過去30日間）
   useEffect(() => {
@@ -65,7 +84,6 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       if (organizerEmail) params.append('organizerEmail', organizerEmail);
-      if (attendeeName) params.append('attendeeName', attendeeName);
       if (categoryFilter !== 'all') params.append('category', categoryFilter);
       
       const response = await fetch(`/api/meeting-history?${params}`);
@@ -94,7 +112,7 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
       setCurrentPage(1);
       fetchMeetingHistory(1);
     }
-  }, [startDate, endDate, organizerEmail, attendeeName, categoryFilter]);
+  }, [startDate, endDate, organizerEmail, categoryFilter]);
 
   // ページ変更
   const handlePageChange = (page: number) => {
@@ -102,15 +120,7 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
     fetchMeetingHistory(page);
   };
 
-  const toggleRowExpansion = (id: string) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedRows(newExpanded);
-  };
+
 
   const getCategoryColor = (category: string) => {
     return category === '講師面談' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
@@ -210,7 +220,7 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
 
       {/* フィルター */}
       <div className="bg-white rounded-lg border p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 開始日 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">開始日</label>
@@ -247,28 +257,21 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
             </select>
           </div>
 
-          {/* 主催者メール */}
+          {/* 講師選択 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">主催者メール</label>
-            <input
-              type="email"
-              placeholder="メールアドレスで検索"
+            <label className="block text-sm font-medium text-gray-700 mb-1">講師</label>
+            <select
               value={organizerEmail}
               onChange={(e) => setOrganizerEmail(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {/* 予約者名 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">予約者名</label>
-            <input
-              type="text"
-              placeholder="予約者名で検索"
-              value={attendeeName}
-              onChange={(e) => setAttendeeName(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            >
+              <option value="">すべての講師</option>
+              {teachers.map((teacher) => (
+                <option key={teacher.email} value={teacher.email}>
+                  {teacher.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -304,19 +307,16 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
                       面談情報
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      予約者
+                      講師
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       日時
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      時間
+                      ドキュメント
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ファイル
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      詳細
+                      動画
                     </th>
                   </tr>
                 </thead>
@@ -333,15 +333,9 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center">
-                              <User className="w-4 h-4 mr-1 text-gray-400" />
-                              <span className="text-sm font-medium">{meeting.attendeeName || '未設定'}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <Mail className="w-4 h-4 mr-1 text-gray-400" />
-                              <span className="text-xs text-gray-500">{meeting.organizerEmail}</span>
-                            </div>
+                          <div className="flex items-center">
+                            <Mail className="w-4 h-4 mr-1 text-gray-400" />
+                            <span className="text-sm font-medium">{meeting.organizerEmail}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -355,128 +349,51 @@ export default function MeetingHistoryTab({ currentDate }: MeetingHistoryTabProp
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-sm font-medium">{meeting.duration}分</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center space-x-2">
-                            {meeting.documentUrls.length > 0 && (
-                              <div className="flex items-center">
-                                <FileText className="w-4 h-4 text-blue-600" />
-                                <span className="text-xs text-gray-500 ml-1">{meeting.documentUrls.length}</span>
-                              </div>
-                            )}
-                            {meeting.videoUrls.length > 0 && (
-                              <div className="flex items-center">
-                                <Video className="w-4 h-4 text-red-600" />
-                                <span className="text-xs text-gray-500 ml-1">{meeting.videoUrls.length}</span>
-                              </div>
-                            )}
-                            {meeting.documentUrls.length === 0 && meeting.videoUrls.length === 0 && (
+                          <div className="space-y-1">
+                            {meeting.documentUrls.length > 0 ? (
+                              meeting.documentUrls.map((url, index) => (
+                                <div key={index} className="flex items-center">
+                                  <FileText className="w-4 h-4 text-blue-600 mr-1" />
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                  >
+                                    ドキュメント{index + 1}
+                                  </a>
+                                  <ExternalLink className="w-3 h-3 ml-1 text-gray-400" />
+                                </div>
+                              ))
+                            ) : (
                               <span className="text-xs text-gray-400">なし</span>
                             )}
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => toggleRowExpansion(meeting.id)}
-                            className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
-                          >
-                            {expandedRows.has(meeting.id) ? (
-                              <>
-                                <ChevronUp className="w-4 h-4 mr-1" />
-                                閉じる
-                              </>
+                          <div className="space-y-1">
+                            {meeting.videoUrls.length > 0 ? (
+                              meeting.videoUrls.map((url, index) => (
+                                <div key={index} className="flex items-center">
+                                  <Video className="w-4 h-4 text-red-600 mr-1" />
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                                  >
+                                    動画{index + 1}
+                                  </a>
+                                  <ExternalLink className="w-3 h-3 ml-1 text-gray-400" />
+                                </div>
+                              ))
                             ) : (
-                              <>
-                                <ChevronDown className="w-4 h-4 mr-1" />
-                                詳細
-                              </>
+                              <span className="text-xs text-gray-400">なし</span>
                             )}
-                          </button>
+                          </div>
                         </td>
                       </tr>
-                      
-                      {/* 展開行 */}
-                      {expandedRows.has(meeting.id) && (
-                        <tr>
-                          <td colSpan={6} className="px-4 py-3 bg-gray-50">
-                            <div className="space-y-3">
-                              {/* 説明 */}
-                              {meeting.description && (
-                                <div>
-                                  <h4 className="text-sm font-medium text-gray-700 mb-1">説明</h4>
-                                  <p className="text-sm text-gray-600">{meeting.description}</p>
-                                </div>
-                              )}
-                              
-                              {/* ファイル */}
-                              {(meeting.documentUrls.length > 0 || meeting.videoUrls.length > 0) && (
-                                <div>
-                                  <h4 className="text-sm font-medium text-gray-700 mb-2">添付ファイル</h4>
-                                  <div className="space-y-2">
-                                    {meeting.documentUrls.map((url, index) => (
-                                      <div key={index} className="flex items-center space-x-2">
-                                        <FileText className="w-4 h-4 text-blue-600" />
-                                        <a
-                                          href={url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-                                        >
-                                          ドキュメント {index + 1}
-                                          <ExternalLink className="w-3 h-3 ml-1" />
-                                        </a>
-                                      </div>
-                                    ))}
-                                    {meeting.videoUrls.map((url, index) => (
-                                      <div key={index} className="flex items-center space-x-2">
-                                        <Video className="w-4 h-4 text-red-600" />
-                                        <a
-                                          href={url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-sm text-red-600 hover:text-red-800 flex items-center"
-                                        >
-                                          動画 {index + 1}
-                                          <ExternalLink className="w-3 h-3 ml-1" />
-                                        </a>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* リンク */}
-                              <div className="flex items-center space-x-4">
-                                {meeting.meetLink && (
-                                  <a
-                                    href={meeting.meetLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-                                  >
-                                    <Video className="w-4 h-4 mr-1" />
-                                    Google Meet
-                                    <ExternalLink className="w-3 h-3 ml-1" />
-                                  </a>
-                                )}
-                                {meeting.calendarEventUrl && (
-                                  <a
-                                    href={meeting.calendarEventUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-gray-600 hover:text-gray-800 flex items-center"
-                                  >
-                                    <Calendar className="w-4 h-4 mr-1" />
-                                    カレンダーで開く
-                                    <ExternalLink className="w-3 h-3 ml-1" />
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
+
                     </React.Fragment>
                   ))}
                 </tbody>
