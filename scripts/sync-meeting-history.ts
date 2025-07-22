@@ -41,7 +41,7 @@ function getGoogleAuth() {
 function getCategoryFromTitle(title: string): 'teacher' | 'entry' {
   if (title.includes('講師面談')) {
     return 'teacher';
-  } else if (title.includes('受講開始面談')) {
+  } else if (title.includes('受講開始')) {
     return 'entry';
   }
   return 'teacher'; // デフォルト
