@@ -18,15 +18,15 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
 // Google Calendar API設定
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
-const CALENDAR_ID = process.env.GCAL_CALENDAR_ID;
+const CALENDAR_ID = process.env.GCAL_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID;
 
 if (!CALENDAR_ID) {
-  throw new Error('GCAL_CALENDAR_ID must be set in environment variables');
+  throw new Error('GCAL_CALENDAR_ID or GOOGLE_CALENDAR_ID must be set in environment variables');
 }
 
 // サービスアカウント認証
 function getGoogleAuth() {
-  const serviceAccountPath = process.env.GCAL_SERVICE_ACCOUNT_PATH || './google-service-account.json';
+  const serviceAccountPath = process.env.GCAL_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_SERVICE_ACCOUNT_PATH || './google-service-account.json';
   console.log('Using service account path:', serviceAccountPath);
   
   const auth = new google.auth.GoogleAuth({
