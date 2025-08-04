@@ -48,7 +48,9 @@ jobs:
         
     - name: Create Google Service Account JSON
       run: |
-        echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > google-service-account.json
+        echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > google-service-account.json
+      env:
+        GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         
     - name: Validate inputs for bulk sync
       if: github.event.inputs.sync_type == 'bulk'
