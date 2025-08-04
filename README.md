@@ -218,6 +218,34 @@ Calendar API quota exceeded
 npm run clean-old-data
 ```
 
+## 🤖 GitHub Actions自動同期
+
+### 自動同期設定
+毎日日本時間23:30に自動的に当日分の面談データが同期されます。
+
+#### 必要な環境変数（GitHub Secrets）
+リポジトリの Settings > Secrets and variables > Actions で以下を設定：
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GOOGLE_SERVICE_ACCOUNT_JSON=your_service_account_json
+GOOGLE_CALENDAR_ID=your_calendar_id
+```
+
+#### ワークフロー
+- **Daily Sync**: 毎日23:30（JST）に自動実行
+- **Manual Sync**: GitHub Actionsページから手動実行可能
+  - Daily sync: 当日分のみ
+  - Bulk sync: 指定期間の一括同期
+
+### 手動実行方法
+1. GitHubリポジトリの「Actions」タブに移動
+2. 「Manual Meeting History Sync」を選択
+3. 「Run workflow」をクリック
+4. 同期タイプと期間を指定して実行
+
 ## 📝 開発ガイドライン
 
 ### コード規約
