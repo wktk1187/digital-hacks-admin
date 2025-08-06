@@ -43,6 +43,7 @@ jobs:
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         GOOGLE_SERVICE_ACCOUNT_PATH: ./google-service-account.json
         GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
+        GCAL_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
         TZ: Asia/Tokyo
       run: |
         echo "🚀 Starting daily meeting history sync at $(date '+%Y-%m-%d %H:%M:%S %Z')"
