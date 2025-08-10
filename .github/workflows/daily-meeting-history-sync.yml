@@ -1,0 +1,80 @@
+name: Daily Meeting History Sync
+
+on:
+  schedule:
+    - cron: '0 14 * * *' # JST 23:00 == UTC 14:00（必要に応じて変更）
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  sync-meeting-data:
+    name: sync-meeting-data
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # カレンダーIDはどちらの変数名でも取得可能な実装なので、両方に設定
+      GCAL_CALENDAR_ID: ${{ secrets.GCAL_CALENDAR_ID }}
+      GOOGLE_CALENDAR_ID: ${{ secrets.GCAL_CALENDAR_ID }}
+      # サービスアカウントJSON（中身そのもの）: どちらのSecret名でも対応
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+      GCAL_SERVICE_ACCOUNT_JSON: ${{ secrets.GCAL_SERVICE_ACCOUNT_JSON }}
+      # スクリプトが参照するパス（GCAL_/GOOGLE_ どちらでも読む設計）
+      GOOGLE_SERVICE_ACCOUNT_PATH: ./google-service-account.json
+      GCAL_SERVICE_ACCOUNT_PATH: ./google-service-account.json
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Set timezone to Asia/Tokyo
+        run: |
+          sudo timedatectl set-timezone Asia/Tokyo
+          date
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Write Google service account json
+        run: |
+          CONTENT="$GOOGLE_SERVICE_ACCOUNT_JSON"
+          if [ -z "$CONTENT" ]; then
+            CONTENT="$GCAL_SERVICE_ACCOUNT_JSON"
+          fi
+          if [ -z "$CONTENT" ]; then
+            echo "Service account JSON secret is empty (GOOGLE_SERVICE_ACCOUNT_JSON/GCAL_SERVICE_ACCOUNT_JSON)" >&2
+            exit 1
+          fi
+          echo "$CONTENT" > "$GOOGLE_SERVICE_ACCOUNT_PATH"
+          test -s "$GOOGLE_SERVICE_ACCOUNT_PATH" || { echo "Service account file not created" >&2; exit 1; }
+
+      - name: Sanity check env
+        run: |
+          if [ -z "$GCAL_CALENDAR_ID" ] && [ -z "$GOOGLE_CALENDAR_ID" ]; then
+            echo "GCAL_CALENDAR_ID or GOOGLE_CALENDAR_ID must be set" >&2
+            exit 1
+          fi
+          echo "GCAL_CALENDAR_ID length: ${#GCAL_CALENDAR_ID}"
+
+      - name: Start daily sync
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          echo "🚀 Starting daily meeting history sync at $(date '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "📅 Syncing data for $(date '+%Y-%m-%d')"
+          npm run sync-history daily
+          echo "✅ Daily sync completed at $(date '+%Y-%m-%d %H:%M:%S %Z')"
+
+      - name: Cleanup service account file
+        if: always()
+        run: rm -f "$GOOGLE_SERVICE_ACCOUNT_PATH"
+
+

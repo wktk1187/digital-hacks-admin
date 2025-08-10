@@ -1,0 +1,75 @@
+name: Manual Meeting History Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode: daily or bulk'
+        type: choice
+        default: daily
+        options:
+          - daily
+          - bulk
+      start:
+        description: 'Start date for bulk (YYYY-MM-DD)'
+        required: false
+        type: string
+      end:
+        description: 'End date for bulk (YYYY-MM-DD)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sync-meeting-data:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GCAL_CALENDAR_ID: ${{ secrets.GCAL_CALENDAR_ID }}
+      GOOGLE_CALENDAR_ID: ${{ secrets.GCAL_CALENDAR_ID }}
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+      GCAL_SERVICE_ACCOUNT_JSON: ${{ secrets.GCAL_SERVICE_ACCOUNT_JSON }}
+      GOOGLE_SERVICE_ACCOUNT_PATH: ./google-service-account.json
+      GCAL_SERVICE_ACCOUNT_PATH: ./google-service-account.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - run: npm ci
+
+      - name: Write Google service account json
+        run: |
+          CONTENT="$GOOGLE_SERVICE_ACCOUNT_JSON"
+          if [ -z "$CONTENT" ]; then
+            CONTENT="$GCAL_SERVICE_ACCOUNT_JSON"
+          fi
+          if [ -z "$CONTENT" ]; then
+            echo "Service account JSON secret is empty (GOOGLE_SERVICE_ACCOUNT_JSON/GCAL_SERVICE_ACCOUNT_JSON)" >&2
+            exit 1
+          fi
+          echo "$CONTENT" > "$GOOGLE_SERVICE_ACCOUNT_PATH"
+          test -s "$GOOGLE_SERVICE_ACCOUNT_PATH" || { echo "Service account file not created" >&2; exit 1; }
+
+      - name: Run sync
+        run: |
+          if [ "${{ github.event.inputs.mode }}" = "bulk" ]; then
+            echo "Running bulk sync: ${{ github.event.inputs.start }} to ${{ github.event.inputs.end }}"
+            npm run sync-history bulk ${{ github.event.inputs.start }} ${{ github.event.inputs.end }}
+          else
+            echo "Running daily sync"
+            npm run sync-history daily
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: rm -f "$GOOGLE_SERVICE_ACCOUNT_PATH"
+
+
