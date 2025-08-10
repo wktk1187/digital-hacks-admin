@@ -96,12 +96,14 @@ export default function DashboardPage() {
         const teachers = (await getTeachers()) as { id: string; name: string }[];
 
         // ③ 当月 day 列を取得してカレンダー用にマップ
-        const firstISO = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-          .toISOString()
-          .slice(0, 10);
-        const lastISO = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
-          .toISOString()
-          .slice(0, 10);
+        // 日本時間ベースのカレンダー → 日付比較は「純粋な日付文字列(YYYY-MM-DD)」で行う
+        // toISOString().slice(0,10) はUTC基準になり日付がズレるため使用しない
+        const y = currentDate.getFullYear();
+        const m = currentDate.getMonth() + 1; // 1-12
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const firstISO = `${y}-${pad(m)}-01`;
+        const lastDay = new Date(y, m, 0).getDate();
+        const lastISO = `${y}-${pad(m)}-${pad(lastDay)}`;
 
         const { data: dayRows } = await supabase
           .from('stats_all_day')
@@ -145,12 +147,14 @@ export default function DashboardPage() {
 
         // dayRows をカレンダーに反映（teacher + entry の合計）
         dayRows?.forEach((r) => {
-          const d = new Date(r.key_date);
-          const idx = calendar.findIndex((c) => c.date === d.getDate());
+          // 取得した key_date は YYYY-MM-DD 形式（Postgres DATE）想定。日付文字列から日だけ取得して反映。
+          const keyDateStr = String((r as any).key_date);
+          const dayNum = Number(keyDateStr.slice(8, 10));
+          const idx = calendar.findIndex((c) => c.date === dayNum);
           if (idx !== -1) {
             calendar[idx] = {
               ...calendar[idx],
-              count: (calendar[idx].count || 0) + r.total_cnt,
+              count: (calendar[idx].count || 0) + (r as any).total_cnt,
               hasData: true,
             };
           }

@@ -25,6 +25,13 @@ export function generateCalendarData(year: number, month: number): DayData[] {
   return calendarData;
 }
 
+export function formatDateLocalYYYYMMDD(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 // 既存の静的講師リストは不要になったため削除 (Supabase から取得するよう移行)
 
 // フォールバック用のスタブ (オンライン時は Supabase から取得)
