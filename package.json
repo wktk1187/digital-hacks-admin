@@ -9,6 +9,7 @@
     "lint": "next lint",
     "sync-history": "tsx scripts/sync-meeting-history.ts",
     "update-durations": "tsx scripts/update-actual-durations.ts",
+    "delete-day": "tsx scripts/delete-day.ts",
     "test-domain-delegation": "tsx scripts/test-domain-delegation.ts"
   },
   "dependencies": {
