@@ -42,8 +42,9 @@
 - **Google Drive API**: 動画時間抽出
 
 ### 認証・セキュリティ
-- **Supabase Auth**: セキュアな認証システム
-- **Row Level Security (RLS)**: データアクセス制御
+- **管理者ログインAPI**: `/api/login`（`admins`テーブルを参照）
+- **Row Level Security (RLS)**: すべての機密テーブルで有効（`admins`/`teachers`/`meeting_history` など）。
+  - 統計テーブル（`stats_*`）のみ匿名SELECTを許可（READ-ONLY）。
 - **Google Domain-wide Delegation**: サービスアカウント権限委譲
 
 ## 📁 プロジェクト構造
@@ -76,10 +77,9 @@ digital-hacks-mtgadmin/
 #### `teachers`
 講師情報の管理
 ```sql
-- id: UUID (Primary Key)
-- name: VARCHAR (講師名)
-- email: VARCHAR (メールアドレス)
-- created_at: TIMESTAMP
+- email: TEXT (Primary Key)
+- name: TEXT (講師名)
+- created_at: TIMESTAMPTZ
 ```
 
 #### `meeting_history`
@@ -89,29 +89,44 @@ digital-hacks-mtgadmin/
 - calendar_event_id: VARCHAR (Google Calendar ID)
 - title: VARCHAR (面談タイトル)
 - organizer_email: VARCHAR (主催者メール)
+- attendee_name: VARCHAR (予約者名)
+- attendee_email: VARCHAR (予約者メール)
 - start_time: TIMESTAMP (開始時間)
 - end_time: TIMESTAMP (終了時間)
 - duration_minutes: INTEGER (予定時間)
 - actual_duration_minutes: INTEGER (実際の時間)
 - category: VARCHAR (teacher/entry)
-- attendee_emails: TEXT[] (参加者メール)
+- description: TEXT
+- location: TEXT
+- document_urls: TEXT[] (資料URL)
+- video_urls: TEXT[] (動画URL)
+- meet_link: TEXT
+- calendar_event_url: TEXT
 ```
 
 #### 統計テーブル
-- `stats_teacher_day`: 講師別日次統計
-- `stats_teacher_month`: 講師別月次統計
+- `stats_teacher_day`: 講師別日次統計（`total_cnt`,`total_minutes`,`category`,`key_date`）
+- `stats_teacher_month`: 講師別月次統計（`key_year`,`key_month`）
+- `stats_teacher_year`: 講師別年次統計（`key_year`）
 - `stats_all_day`: 全体日次統計
 - `stats_all_month`: 全体月次統計
+- `stats_all_year`: 全体年次統計
 
 ## ⚙️ セットアップ
 
 ### 1. 環境変数設定
-`.env.local`ファイルを作成:
+`.env.local`ファイルを作成（ローカル実行用）:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GOOGLE_CALENDAR_CREDENTIALS=your_google_credentials_json
+# どちらか一方で可（コードは優先順で参照）
+GCAL_CALENDAR_ID=your_calendar_id
+GOOGLE_CALENDAR_ID=your_calendar_id
+
+# 省略時は ./google-service-account.json を自動参照
+GOOGLE_SERVICE_ACCOUNT_PATH=./google-service-account.json
+GCAL_SERVICE_ACCOUNT_PATH=./google-service-account.json
 ```
 
 ### 2. 依存関係インストール
@@ -153,6 +168,12 @@ npm run sync-history bulk 2025-07-01 2025-07-16
 #### 実際時間の更新
 ```bash
 npm run update-durations
+```
+
+#### 指定日の削除（JST）
+```bash
+# 例: 2025-08-11 の面談履歴と統計差分を取り消し
+npm run delete-day 2025-08-11
 ```
 
 ### ドメイン権限委譲テスト
@@ -230,15 +251,15 @@ npm run clean-old-data
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GOOGLE_SERVICE_ACCOUNT_JSON=your_service_account_json
-GOOGLE_CALENDAR_ID=your_calendar_id
+GOOGLE_SERVICE_ACCOUNT_JSON=your_service_account_json  # or GCAL_SERVICE_ACCOUNT_JSON
+GCAL_CALENDAR_ID=your_calendar_id                      # or GOOGLE_CALENDAR_ID
 ```
 
 #### ワークフロー
-- **Daily Sync**: 毎日23:30（JST）に自動実行
-- **Manual Sync**: GitHub Actionsページから手動実行可能
-  - Daily sync: 当日分のみ
-  - Bulk sync: 指定期間の一括同期
+- **Daily Meeting History Sync**: 毎日23:30（JST）に自動実行（手動起動も可）
+- **Manual Meeting History Sync**: 手動実行
+  - mode = `daily`（当日分）
+  - mode = `bulk` + `start`/`end` で期間同期
 
 ### 手動実行方法
 1. GitHubリポジトリの「Actions」タブに移動
@@ -274,5 +295,5 @@ npm run sync-history bulk 2025-07-17 2025-07-17
 ---
 
 **バージョン**: 1.0.0  
-**最終更新**: 2025年7月17日  
+**最終更新**: 2025年8月11日  
 **開発**: デジタルハックス技術チーム 
